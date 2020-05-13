@@ -1,15 +1,18 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.common.util.AftersaleConstant;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Aftersale;
+import org.linlinjava.litemall.db.entity.OrderGoods;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.AftersaleConstant;
-import org.linlinjava.litemall.db.util.OrderUtil;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.util.WxResponseCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +40,11 @@ public class WxAftersaleController {
     private final Log logger = LogFactory.getLog(WxAftersaleController.class);
 
     @Autowired
-    private LitemallAftersaleService aftersaleService;
+    private IAftersaleService aftersaleService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
     @Autowired
-    private LitemallOrderGoodsService orderGoodsService;
+    private IOrderGoodsService orderGoodsService;
 
     /**
      * 售后列表
@@ -56,7 +59,7 @@ public class WxAftersaleController {
      */
     @GetMapping("list")
     public Object list(@LoginUser Integer userId,
-                       @RequestParam Short status,
+                       @RequestParam Integer status,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
@@ -65,11 +68,11 @@ public class WxAftersaleController {
             return ResponseUtil.unlogin();
         }
 
-        List<LitemallAftersale> aftersaleList = aftersaleService.queryList(userId, status, page, limit, sort, order);
+        IPage<Aftersale> aftersaleIPage = aftersaleService.queryList(userId, status, page, limit, sort, order);
 
-        List<Map<String, Object>> aftersaleVoList = new ArrayList<>(aftersaleList.size());
-        for (LitemallAftersale aftersale : aftersaleList) {
-            List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(aftersale.getOrderId());
+        List<Map<String, Object>> aftersaleVoList = new ArrayList<>(aftersaleIPage.getRecords().size());
+        for (Aftersale aftersale : aftersaleIPage.getRecords()) {
+            List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(aftersale.getOrderId());
 
             Map<String, Object> aftersaleVo = new HashMap<>();
             aftersaleVo.put("aftersale", aftersale);
@@ -78,7 +81,9 @@ public class WxAftersaleController {
             aftersaleVoList.add(aftersaleVo);
         }
 
-        return ResponseUtil.okList(aftersaleVoList, aftersaleList);
+        IPage iPage = new PageUtil().pagetoPage(aftersaleIPage, aftersaleVoList);
+
+        return ResponseUtil.okPageList(iPage);
     }
 
     /**
@@ -93,12 +98,12 @@ public class WxAftersaleController {
             return ResponseUtil.unlogin();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        org.linlinjava.litemall.db.entity.Order order = orderService.findByUserIdAndId(userId, orderId);
         if (order == null){
             return ResponseUtil.badArgumentValue();
         }
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(orderId);
-        LitemallAftersale aftersale = aftersaleService.findByOrderId(userId, orderId);
+        List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(orderId);
+        Aftersale aftersale = aftersaleService.findByOrderId(userId, orderId);
 
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("aftersale", aftersale);
@@ -115,7 +120,7 @@ public class WxAftersaleController {
      * @return 操作结果
      */
     @PostMapping("submit")
-    public Object submit(@LoginUser Integer userId, @RequestBody LitemallAftersale aftersale) {
+    public Object submit(@LoginUser Integer userId, @RequestBody Aftersale aftersale) {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
@@ -128,7 +133,7 @@ public class WxAftersaleController {
         if(orderId == null){
             return ResponseUtil.badArgument();
         }
-        LitemallOrder order = orderService.findById(userId, orderId);
+        org.linlinjava.litemall.db.entity.Order order = orderService.findByUserIdAndId(userId, orderId);
         if(order == null){
             return ResponseUtil.badArgumentValue();
         }
@@ -141,7 +146,7 @@ public class WxAftersaleController {
         if(aftersale.getAmount().compareTo(amount) > 0){
             return ResponseUtil.fail(WxResponseCode.AFTERSALE_INVALID_AMOUNT, "退款金额不正确");
         }
-        Short afterStatus = order.getAftersaleStatus();
+        Integer afterStatus = order.getAftersaleStatus();
         if(afterStatus.equals(AftersaleConstant.STATUS_RECEPT) || afterStatus.equals(AftersaleConstant.STATUS_REFUND)){
             return ResponseUtil.fail(WxResponseCode.AFTERSALE_INVALID_AMOUNT, "已申请售后");
         }
@@ -150,9 +155,9 @@ public class WxAftersaleController {
         aftersaleService.deleteByOrderId(userId, orderId);
 
         aftersale.setStatus(AftersaleConstant.STATUS_REQUEST);
-        aftersale.setAftersaleSn(aftersaleService.generateAftersaleSn(userId));
+        aftersale.setAftersaleSn(OrderUtil.generateOrderSn(userId));
         aftersale.setUserId(userId);
-        aftersaleService.add(aftersale);
+        aftersaleService.save(aftersale);
 
         // 订单的aftersale_status和售后记录的status是一致的。
         orderService.updateAftersaleStatus(orderId, AftersaleConstant.STATUS_REQUEST);
@@ -169,7 +174,7 @@ public class WxAftersaleController {
      * @return 操作结果
      */
     @PostMapping("cancel")
-    public Object cancel(@LoginUser Integer userId, @RequestBody LitemallAftersale aftersale) {
+    public Object cancel(@LoginUser Integer userId, @RequestBody Aftersale aftersale) {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
@@ -177,13 +182,13 @@ public class WxAftersaleController {
         if(id == null){
             return ResponseUtil.badArgument();
         }
-        LitemallAftersale aftersaleOne = aftersaleService.findById(userId, id);
+        Aftersale aftersaleOne = aftersaleService.findByUserId(userId, id);
         if(aftersaleOne == null){
             return ResponseUtil.badArgument();
         }
 
         Integer orderId = aftersaleOne.getOrderId();
-        LitemallOrder order = orderService.findById(userId, orderId);
+        org.linlinjava.litemall.db.entity.Order order = orderService.findByUserIdAndId(userId, orderId);
         if(!order.getUserId().equals(userId)){
             return ResponseUtil.badArgumentValue();
         }
@@ -192,7 +197,7 @@ public class WxAftersaleController {
         if(!OrderUtil.isConfirmStatus(order) && !OrderUtil.isAutoConfirmStatus(order)){
             return ResponseUtil.fail(WxResponseCode.AFTERSALE_UNALLOWED, "不支持售后");
         }
-        Short afterStatus = order.getAftersaleStatus();
+        Integer afterStatus = order.getAftersaleStatus();
         if(!afterStatus.equals(AftersaleConstant.STATUS_REQUEST)){
             return ResponseUtil.fail(WxResponseCode.AFTERSALE_INVALID_STATUS, "不能取消售后");
         }
@@ -206,8 +211,8 @@ public class WxAftersaleController {
         return ResponseUtil.ok();
     }
 
-    private Object validate(LitemallAftersale aftersale) {
-        Short type = aftersale.getType();
+    private Object validate(Aftersale aftersale) {
+        Integer type = aftersale.getType();
         if (type == null) {
             return ResponseUtil.badArgument();
         }

@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * @date 2018/7/16 16:10
  * @decrpt 阿里云对象存储服务
  */
-public class AliyunStorage implements Storage {
+public class AliyunStorage implements IStorage {
 
     private final Log logger = LogFactory.getLog(AliyunStorage.class);
 

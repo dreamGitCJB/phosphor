@@ -1,6 +1,7 @@
 package org.linlinjava.litemall.core.util;
 
-import com.github.pagehelper.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +56,17 @@ public class ResponseUtil {
         return obj;
     }
 
+    public static Object okPageList(IPage page) {
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("list", page.getRecords());
+        data.put("total", page.getTotal());
+        data.put("page", page.getCurrent());
+        data.put("limit", page.getSize());
+        data.put("pages", page.getPages());
+
+        return ok(data);
+    }
+
     public static Object okList(List list) {
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("list", list);
@@ -62,8 +74,8 @@ public class ResponseUtil {
         if (list instanceof Page) {
             Page page = (Page) list;
             data.put("total", page.getTotal());
-            data.put("page", page.getPageNum());
-            data.put("limit", page.getPageSize());
+            data.put("page", page.getCurrent());
+            data.put("limit", page.getSize());
             data.put("pages", page.getPages());
         } else {
             data.put("total", list.size());
@@ -82,8 +94,8 @@ public class ResponseUtil {
         if (pagedList instanceof Page) {
             Page page = (Page) pagedList;
             data.put("total", page.getTotal());
-            data.put("page", page.getPageNum());
-            data.put("limit", page.getPageSize());
+            data.put("page", page.getCurrent());
+            data.put("limit", page.getSize());
             data.put("pages", page.getPages());
         } else {
             data.put("total", pagedList.size());

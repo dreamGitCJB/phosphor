@@ -16,7 +16,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-public class QiniuStorage implements Storage {
+public class QiniuStorage implements IStorage {
 
     private final Log logger = LogFactory.getLog(QiniuStorage.class);
 

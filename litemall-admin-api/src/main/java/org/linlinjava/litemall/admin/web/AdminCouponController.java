@@ -1,5 +1,8 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -7,18 +10,18 @@ import org.linlinjava.litemall.admin.annotation.RequiresPermissionsDesc;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallCoupon;
-import org.linlinjava.litemall.db.domain.LitemallCouponUser;
-import org.linlinjava.litemall.db.service.LitemallCouponService;
-import org.linlinjava.litemall.db.service.LitemallCouponUserService;
-import org.linlinjava.litemall.db.util.CouponConstant;
+import org.linlinjava.litemall.db.common.constans.CouponConstant;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Coupon;
+import org.linlinjava.litemall.db.entity.CouponUser;
+import org.linlinjava.litemall.db.service.ICouponService;
+import org.linlinjava.litemall.db.service.ICouponUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
-import java.util.List;
 
 @RestController
 @RequestMapping("/admin/coupon")
@@ -27,9 +30,9 @@ public class AdminCouponController {
     private final Log logger = LogFactory.getLog(AdminCouponController.class);
 
     @Autowired
-    private LitemallCouponService couponService;
+    private ICouponService couponService;
     @Autowired
-    private LitemallCouponUserService couponUserService;
+    private ICouponUserService couponUserService;
 
     @RequiresPermissions("admin:coupon:list")
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "查询")
@@ -39,24 +42,35 @@ public class AdminCouponController {
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallCoupon> couponList = couponService.querySelective(name, type, status, page, limit, sort, order);
-        return ResponseUtil.okList(couponList);
+
+
+
+        Page pageData = new Page(page, limit);
+        PageUtil.pagetoPage(pageData, sort, order);
+
+        IPage<Coupon> couponList = couponService.page(pageData, new LambdaQueryWrapper<Coupon>()
+                .like(!StringUtils.isEmpty(name), Coupon::getName, name)
+                .eq(type != null, Coupon::getType, type)
+                .eq(status != null, Coupon::getStatus, status));
+
+
+        return ResponseUtil.okPageList(couponList);
     }
 
     @RequiresPermissions("admin:coupon:listuser")
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "查询用户")
     @GetMapping("/listuser")
-    public Object listuser(Integer userId, Integer couponId, Short status,
+    public Object listuser(Integer userId, Integer couponId, Integer status,
                            @RequestParam(defaultValue = "1") Integer page,
                            @RequestParam(defaultValue = "10") Integer limit,
                            @Sort @RequestParam(defaultValue = "add_time") String sort,
                            @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallCouponUser> couponList = couponUserService.queryList(userId, couponId, status, page,
+        IPage<CouponUser> couponList = couponUserService.queryList(userId, couponId, status, page,
                 limit, sort, order);
-        return ResponseUtil.okList(couponList);
+        return ResponseUtil.okPageList(couponList);
     }
 
-    private Object validate(LitemallCoupon coupon) {
+    private Object validate(Coupon coupon) {
         String name = coupon.getName();
         if (StringUtils.isEmpty(name)) {
             return ResponseUtil.badArgument();
@@ -67,7 +81,7 @@ public class AdminCouponController {
     @RequiresPermissions("admin:coupon:create")
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "添加")
     @PostMapping("/create")
-    public Object create(@RequestBody LitemallCoupon coupon) {
+    public Object create(@RequestBody Coupon coupon) {
         Object error = validate(coupon);
         if (error != null) {
             return error;
@@ -75,11 +89,11 @@ public class AdminCouponController {
 
         // 如果是兑换码类型，则这里需要生存一个兑换码
         if (coupon.getType().equals(CouponConstant.TYPE_CODE)) {
-            String code = couponService.generateCode();
+            String code = CouponConstant.getRandomNum(8);
             coupon.setCode(code);
         }
 
-        couponService.add(coupon);
+        couponService.save(coupon);
         return ResponseUtil.ok(coupon);
     }
 
@@ -87,19 +101,19 @@ public class AdminCouponController {
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "详情")
     @GetMapping("/read")
     public Object read(@NotNull Integer id) {
-        LitemallCoupon coupon = couponService.findById(id);
+        Coupon coupon = couponService.getById(id);
         return ResponseUtil.ok(coupon);
     }
 
     @RequiresPermissions("admin:coupon:update")
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "编辑")
     @PostMapping("/update")
-    public Object update(@RequestBody LitemallCoupon coupon) {
+    public Object update(@RequestBody Coupon coupon) {
         Object error = validate(coupon);
         if (error != null) {
             return error;
         }
-        if (couponService.updateById(coupon) == 0) {
+        if (!couponService.updateById(coupon)) {
             return ResponseUtil.updatedDataFailed();
         }
         return ResponseUtil.ok(coupon);
@@ -108,8 +122,8 @@ public class AdminCouponController {
     @RequiresPermissions("admin:coupon:delete")
     @RequiresPermissionsDesc(menu = {"推广管理", "优惠券管理"}, button = "删除")
     @PostMapping("/delete")
-    public Object delete(@RequestBody LitemallCoupon coupon) {
-        couponService.deleteById(coupon.getId());
+    public Object delete(@RequestBody Coupon coupon) {
+        couponService.removeById(coupon.getId());
         return ResponseUtil.ok();
     }
 

@@ -3,7 +3,7 @@ package org.linlinjava.litemall.wx.web;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.service.LitemallOrderService;
+import org.linlinjava.litemall.db.service.IOrderService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +24,7 @@ public class WxUserController {
     private final Log logger = LogFactory.getLog(WxUserController.class);
 
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
 
     /**
      * 用户个人页面数据
@@ -40,7 +40,7 @@ public class WxUserController {
             return ResponseUtil.unlogin();
         }
 
-        Map<Object, Object> data = new HashMap<Object, Object>();
+        Map<Object, Object> data = new HashMap<Object, Object>(1);
         data.put("order", orderService.orderInfo(userId));
         return ResponseUtil.ok(data);
     }

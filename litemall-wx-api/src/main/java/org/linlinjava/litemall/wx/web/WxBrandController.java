@@ -1,12 +1,13 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallBrand;
-import org.linlinjava.litemall.db.service.LitemallBrandService;
+import org.linlinjava.litemall.db.entity.Brand;
+import org.linlinjava.litemall.db.service.IBrandService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,7 @@ public class WxBrandController {
     private final Log logger = LogFactory.getLog(WxBrandController.class);
 
     @Autowired
-    private LitemallBrandService brandService;
+    private IBrandService brandService;
 
     /**
      * 品牌列表
@@ -43,8 +44,9 @@ public class WxBrandController {
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallBrand> brandList = brandService.query(page, limit, sort, order);
-        return ResponseUtil.okList(brandList);
+
+        IPage<Brand> brandList = brandService.query(page, limit, sort, order);
+        return ResponseUtil.okPageList(brandList);
     }
 
     /**
@@ -55,7 +57,7 @@ public class WxBrandController {
      */
     @GetMapping("detail")
     public Object detail(@NotNull Integer id) {
-        LitemallBrand entity = brandService.findById(id);
+        Brand entity = brandService.getById(id);
         if (entity == null) {
             return ResponseUtil.badArgumentValue();
         }

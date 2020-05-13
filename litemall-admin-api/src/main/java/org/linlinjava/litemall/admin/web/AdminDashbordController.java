@@ -3,10 +3,10 @@ package org.linlinjava.litemall.admin.web;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.service.LitemallGoodsProductService;
-import org.linlinjava.litemall.db.service.LitemallGoodsService;
-import org.linlinjava.litemall.db.service.LitemallOrderService;
-import org.linlinjava.litemall.db.service.LitemallUserService;
+import org.linlinjava.litemall.db.service.IGoodsProductService;
+import org.linlinjava.litemall.db.service.IGoodsService;
+import org.linlinjava.litemall.db.service.IOrderService;
+import org.linlinjava.litemall.db.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,13 +23,13 @@ public class AdminDashbordController {
     private final Log logger = LogFactory.getLog(AdminDashbordController.class);
 
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
     @Autowired
-    private LitemallGoodsProductService productService;
+    private IGoodsProductService productService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
 
     @GetMapping("")
     public Object info() {

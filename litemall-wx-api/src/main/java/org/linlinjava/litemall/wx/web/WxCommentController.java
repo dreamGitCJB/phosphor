@@ -1,14 +1,18 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallComment;
-import org.linlinjava.litemall.db.service.LitemallCommentService;
-import org.linlinjava.litemall.db.service.LitemallGoodsService;
-import org.linlinjava.litemall.db.service.LitemallTopicService;
-import org.linlinjava.litemall.db.service.LitemallUserService;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Comment;
+import org.linlinjava.litemall.db.service.ICommentService;
+import org.linlinjava.litemall.db.service.IGoodsService;
+import org.linlinjava.litemall.db.service.ITopicService;
+import org.linlinjava.litemall.db.service.IUserService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.dto.UserInfo;
 import org.linlinjava.litemall.wx.service.UserInfoService;
@@ -32,23 +36,23 @@ public class WxCommentController {
     private final Log logger = LogFactory.getLog(WxCommentController.class);
 
     @Autowired
-    private LitemallCommentService commentService;
+    private ICommentService commentService;
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
     @Autowired
     private UserInfoService userInfoService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
     @Autowired
-    private LitemallTopicService topicService;
+    private ITopicService topicService;
 
-    private Object validate(LitemallComment comment) {
+    private Object validate(Comment comment) {
         String content = comment.getContent();
         if (StringUtils.isEmpty(content)) {
             return ResponseUtil.badArgument();
         }
 
-        Short star = comment.getStar();
+        Integer star = comment.getStar();
         if (star == null) {
             return ResponseUtil.badArgument();
         }
@@ -56,17 +60,17 @@ public class WxCommentController {
             return ResponseUtil.badArgumentValue();
         }
 
-        Byte type = comment.getType();
+        Integer type = comment.getType();
         Integer valueId = comment.getValueId();
         if (type == null || valueId == null) {
             return ResponseUtil.badArgument();
         }
         if (type == 0) {
-            if (goodsService.findById(valueId) == null) {
+            if (goodsService.getById(valueId) == null) {
                 return ResponseUtil.badArgumentValue();
             }
         } else if (type == 1) {
-            if (topicService.findById(valueId) == null) {
+            if (topicService.getById(valueId) == null) {
                 return ResponseUtil.badArgumentValue();
             }
         } else {
@@ -74,7 +78,7 @@ public class WxCommentController {
         }
         Boolean hasPicture = comment.getHasPicture();
         if (hasPicture == null || !hasPicture) {
-            comment.setPicUrls(new String[0]);
+            comment.setPicUrls(JSON.toJSONString(new ArrayList<>()));
         }
         return null;
     }
@@ -87,7 +91,7 @@ public class WxCommentController {
      * @return 发表评论操作结果
      */
     @PostMapping("post")
-    public Object post(@LoginUser Integer userId, @RequestBody LitemallComment comment) {
+    public Object post(@LoginUser Integer userId, @RequestBody Comment comment) {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
@@ -110,8 +114,8 @@ public class WxCommentController {
      */
     @GetMapping("count")
     public Object count(@NotNull Byte type, @NotNull Integer valueId) {
-        int allCount = commentService.count(type, valueId, 0);
-        int hasPicCount = commentService.count(type, valueId, 1);
+        int allCount = commentService.count(new LambdaQueryWrapper<Comment>().eq(Comment::getType, type).eq(Comment::getValueId, valueId));
+        int hasPicCount = commentService.count(new LambdaQueryWrapper<Comment>().eq(Comment::getType, type).eq(Comment::getValueId, valueId).eq(Comment::getHasPicture, true));
         Map<String, Object> entity = new HashMap<String, Object>();
         entity.put("allCount", allCount);
         entity.put("hasPicCount", hasPicCount);
@@ -129,15 +133,15 @@ public class WxCommentController {
      * @return 评论列表
      */
     @GetMapping("list")
-    public Object list(@NotNull Byte type,
+    public Object list(@NotNull Integer type,
                        @NotNull Integer valueId,
                        @NotNull Integer showType,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit) {
-        List<LitemallComment> commentList = commentService.query(type, valueId, showType, page, limit);
+        IPage<Comment> commentIPage = commentService.query(type, valueId, showType, page, limit);
 
-        List<Map<String, Object>> commentVoList = new ArrayList<>(commentList.size());
-        for (LitemallComment comment : commentList) {
+        List<Map<String, Object>> commentVoList = new ArrayList<>(commentIPage.getRecords().size());
+        for (Comment comment : commentIPage.getRecords()) {
             Map<String, Object> commentVo = new HashMap<>();
             commentVo.put("addTime", comment.getAddTime());
             commentVo.put("content", comment.getContent());
@@ -149,6 +153,7 @@ public class WxCommentController {
 
             commentVoList.add(commentVo);
         }
-        return ResponseUtil.okList(commentVoList, commentList);
+        IPage iPage = new PageUtil().pagetoPage(commentIPage, commentVoList);
+        return ResponseUtil.okPageList(iPage);
     }
 }

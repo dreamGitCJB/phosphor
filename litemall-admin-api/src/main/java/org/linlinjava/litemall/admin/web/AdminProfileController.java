@@ -1,6 +1,8 @@
 package org.linlinjava.litemall.admin.web;
 
-import io.swagger.models.auth.In;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.shiro.SecurityUtils;
@@ -11,19 +13,18 @@ import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.util.bcrypt.BCryptPasswordEncoder;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallAdmin;
-import org.linlinjava.litemall.db.domain.LitemallIssue;
-import org.linlinjava.litemall.db.domain.LitemallNotice;
-import org.linlinjava.litemall.db.domain.LitemallNoticeAdmin;
-import org.linlinjava.litemall.db.service.LitemallAdminService;
-import org.linlinjava.litemall.db.service.LitemallNoticeAdminService;
-import org.linlinjava.litemall.db.service.LitemallNoticeService;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Admin;
+import org.linlinjava.litemall.db.entity.Notice;
+import org.linlinjava.litemall.db.entity.NoticeAdmin;
+import org.linlinjava.litemall.db.service.IAdminService;
+import org.linlinjava.litemall.db.service.INoticeAdminService;
+import org.linlinjava.litemall.db.service.INoticeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -38,11 +39,11 @@ public class AdminProfileController {
     private final Log logger = LogFactory.getLog(AdminProfileController.class);
 
     @Autowired
-    private LitemallAdminService adminService;
+    private IAdminService adminService;
     @Autowired
-    private LitemallNoticeService noticeService;
+    private INoticeService noticeService;
     @Autowired
-    private LitemallNoticeAdminService noticeAdminService;
+    private INoticeAdminService noticeAdminService;
 
     @RequiresAuthentication
     @PostMapping("/password")
@@ -57,7 +58,7 @@ public class AdminProfileController {
         }
 
         Subject currentUser = SecurityUtils.getSubject();
-        LitemallAdmin admin = (LitemallAdmin) currentUser.getPrincipal();
+        Admin admin = (Admin) currentUser.getPrincipal();
 
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         if (!encoder.matches(oldPassword, admin.getPassword())) {
@@ -73,14 +74,14 @@ public class AdminProfileController {
 
     private Integer getAdminId(){
         Subject currentUser = SecurityUtils.getSubject();
-        LitemallAdmin admin = (LitemallAdmin) currentUser.getPrincipal();
+        Admin admin = (Admin) currentUser.getPrincipal();
         return admin.getId();
     }
 
     @RequiresAuthentication
     @GetMapping("/nnotice")
     public Object nNotice() {
-        int count = noticeAdminService.countUnread(getAdminId());
+        int count = noticeAdminService.count(new LambdaQueryWrapper<NoticeAdmin>().eq(NoticeAdmin::getAdminId, getAdminId()).isNull(NoticeAdmin::getReadTime));
         return ResponseUtil.ok(count);
     }
 
@@ -91,8 +92,15 @@ public class AdminProfileController {
                             @RequestParam(defaultValue = "10") Integer limit,
                             @Sort @RequestParam(defaultValue = "add_time") String sort,
                             @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallNoticeAdmin> noticeList = noticeAdminService.querySelective(title, type, getAdminId(), page, limit, sort, order);
-        return ResponseUtil.okList(noticeList);
+
+        Page pageData = new Page(page, limit);
+        PageUtil.pagetoPage(pageData, sort, order);
+
+        IPage<NoticeAdmin> noticeList = noticeAdminService.page(pageData,new LambdaQueryWrapper<NoticeAdmin>()
+                .isNotNull(type.equals("read"), NoticeAdmin::getReadTime)
+                .isNull(type.equals("unread"), NoticeAdmin::getReadTime)
+                .eq(NoticeAdmin::getAdminId,getAdminId() ));
+        return ResponseUtil.okPageList(noticeList);
     }
 
     @RequiresAuthentication
@@ -103,17 +111,19 @@ public class AdminProfileController {
             return ResponseUtil.badArgument();
         }
 
-        LitemallNoticeAdmin noticeAdmin = noticeAdminService.find(noticeId, getAdminId());
+        NoticeAdmin noticeAdmin = noticeAdminService.getOne(new LambdaQueryWrapper<NoticeAdmin>()
+                .eq(NoticeAdmin::getNoticeId,noticeId)
+                .eq(NoticeAdmin::getAdminId, getAdminId()));
         if(noticeAdmin == null){
            return ResponseUtil.badArgumentValue();
         }
         // 更新通知记录中的时间
         noticeAdmin.setReadTime(LocalDateTime.now());
-        noticeAdminService.update(noticeAdmin);
+        noticeAdminService.updateById(noticeAdmin);
 
         // 返回通知的相关信息
         Map<String, Object> data = new HashMap<>();
-        LitemallNotice notice = noticeService.findById(noticeId);
+        Notice notice = noticeService.getById(noticeId);
         data.put("title", notice.getTitle());
         data.put("content", notice.getContent());
         data.put("time", notice.getUpdateTime());
@@ -122,7 +132,7 @@ public class AdminProfileController {
             data.put("admin", "系统");
         }
         else{
-            LitemallAdmin admin = adminService.findById(notice.getAdminId());
+            Admin admin = adminService.getById(notice.getAdminId());
             data.put("admin", admin.getUsername());
             data.put("avatar", admin.getAvatar());
         }
@@ -133,7 +143,12 @@ public class AdminProfileController {
     @PostMapping("/bcatnotice")
     public Object bcatNotice(@RequestBody String body) {
         List<Integer> ids = JacksonUtil.parseIntegerList(body, "ids");
-        noticeAdminService.markReadByIds(ids, getAdminId());
+
+        NoticeAdmin noticeAdmin = new NoticeAdmin();
+        noticeAdmin.setReadTime(LocalDateTime.now());
+
+        noticeAdminService.update(noticeAdmin, new LambdaQueryWrapper<NoticeAdmin>()
+                .in(NoticeAdmin::getId, ids).eq(NoticeAdmin::getAdminId,getAdminId()));
         return ResponseUtil.ok();
     }
 
@@ -144,7 +159,8 @@ public class AdminProfileController {
         if(id == null){
             return ResponseUtil.badArgument();
         }
-        noticeAdminService.deleteById(id, getAdminId());
+
+        noticeAdminService.remove(new LambdaQueryWrapper<NoticeAdmin>().eq(NoticeAdmin::getAdminId,getAdminId()).eq(NoticeAdmin::getId, id));
         return ResponseUtil.ok();
     }
 
@@ -152,7 +168,8 @@ public class AdminProfileController {
     @PostMapping("/brmnotice")
     public Object brmNotice(@RequestBody String body) {
         List<Integer> ids = JacksonUtil.parseIntegerList(body, "ids");
-        noticeAdminService.deleteByIds(ids, getAdminId());
+
+        noticeAdminService.remove(new LambdaQueryWrapper<NoticeAdmin>().eq(NoticeAdmin::getAdminId, getAdminId()).in(NoticeAdmin::getNoticeId,ids));
         return ResponseUtil.ok();
     }
 

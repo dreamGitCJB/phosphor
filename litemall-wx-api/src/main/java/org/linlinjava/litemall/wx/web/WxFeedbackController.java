@@ -1,14 +1,15 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.RegexUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallFeedback;
-import org.linlinjava.litemall.db.domain.LitemallUser;
-import org.linlinjava.litemall.db.service.LitemallFeedbackService;
-import org.linlinjava.litemall.db.service.LitemallUserService;
+import org.linlinjava.litemall.db.entity.Feedback;
+import org.linlinjava.litemall.db.entity.User;
+import org.linlinjava.litemall.db.service.IFeedbackService;
+import org.linlinjava.litemall.db.service.IUserService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
 
 /**
  * 意见反馈服务
@@ -30,11 +33,11 @@ public class WxFeedbackController {
     private final Log logger = LogFactory.getLog(WxFeedbackController.class);
 
     @Autowired
-    private LitemallFeedbackService feedbackService;
+    private IFeedbackService feedbackService;
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
 
-    private Object validate(LitemallFeedback feedback) {
+    private Object validate(Feedback feedback) {
         String content = feedback.getContent();
         if (StringUtils.isEmpty(content)) {
             return ResponseUtil.badArgument();
@@ -47,7 +50,7 @@ public class WxFeedbackController {
 
         Boolean hasPicture = feedback.getHasPicture();
         if (hasPicture == null || !hasPicture) {
-            feedback.setPicUrls(new String[0]);
+            feedback.setPicUrls(JSON.toJSONString(new ArrayList<>()));
         }
 
         // 测试手机号码是否正确
@@ -69,7 +72,7 @@ public class WxFeedbackController {
      * @return 操作结果
      */
     @PostMapping("submit")
-    public Object submit(@LoginUser Integer userId, @RequestBody LitemallFeedback feedback) {
+    public Object submit(@LoginUser Integer userId, @RequestBody Feedback feedback) {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
@@ -78,14 +81,14 @@ public class WxFeedbackController {
             return error;
         }
 
-        LitemallUser user = userService.findById(userId);
+        User user = userService.getById(userId);
         String username = user.getUsername();
         feedback.setId(null);
         feedback.setUserId(userId);
         feedback.setUsername(username);
         //状态默认是0，1表示状态已发生变化
         feedback.setStatus(1);
-        feedbackService.add(feedback);
+        feedbackService.save(feedback);
 
         return ResponseUtil.ok();
     }

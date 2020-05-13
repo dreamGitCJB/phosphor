@@ -47,6 +47,7 @@ public class LitemallBrand {
      *
      * @mbg.generated
      */
+
     private String desc;
 
     /**

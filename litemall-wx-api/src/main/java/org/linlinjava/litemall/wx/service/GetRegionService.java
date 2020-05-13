@@ -1,7 +1,8 @@
 package org.linlinjava.litemall.wx.service;
 
-import org.linlinjava.litemall.db.domain.LitemallRegion;
-import org.linlinjava.litemall.db.service.LitemallRegionService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.linlinjava.litemall.db.entity.Region;
+import org.linlinjava.litemall.db.service.IRegionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,20 +16,20 @@ import java.util.List;
 public class GetRegionService {
 
 	@Autowired
-	private LitemallRegionService regionService;
+	private IRegionService regionService;
 
-	private static List<LitemallRegion> litemallRegions;
+	private static List<Region> regions;
 
-	protected List<LitemallRegion> getLitemallRegions() {
-		if(litemallRegions==null){
+	protected List<Region> getLitemallRegions() {
+		if(regions==null){
 			createRegion();
 		}
-		return litemallRegions;
+		return regions;
 	}
 
 	private synchronized void createRegion(){
-		if (litemallRegions == null) {
-			litemallRegions = regionService.getAll();
+		if (regions == null) {
+			regions = regionService.list(new LambdaQueryWrapper<Region>().ne(Region::getType, 4));
 		}
 	}
 }

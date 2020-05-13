@@ -1,13 +1,12 @@
 package org.linlinjava.litemall.core.qcode;
 
-import cn.binarywang.wx.miniapp.api.WxMaService;
 import me.chanjar.weixin.common.error.WxErrorException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.storage.StorageService;
 import org.linlinjava.litemall.core.system.SystemConfig;
-import org.linlinjava.litemall.db.domain.LitemallGroupon;
-import org.linlinjava.litemall.db.domain.LitemallStorage;
+import org.linlinjava.litemall.db.entity.Groupon;
+import org.linlinjava.litemall.db.entity.Storage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -21,30 +20,29 @@ import java.net.URL;
 @Service
 public class QCodeService {
     private final Log logger = LogFactory.getLog(QCodeService.class);
-    @Autowired
-    WxMaService wxMaService;
+//    @Autowired
+//    WxMaService wxMaService;
 
     @Autowired
     private StorageService storageService;
 
 
-    public String createGrouponShareImage(String goodName, String goodPicUrl, LitemallGroupon groupon) {
+    public String createGrouponShareImage(String goodName, String goodPicUrl, Groupon groupon) {
         try {
             //创建该商品的二维码
-            File file = wxMaService.getQrcodeService().createWxaCodeUnlimit("groupon," + groupon.getId(), "pages" +
-                    "/index/index");
+            File file = new File("");
+//                    wxMaService.getQrcodeService().createWxaCodeUnlimit("groupon," + groupon.getId(), "pages" +
+//                    "/index/index");
             FileInputStream inputStream = new FileInputStream(file);
             //将商品图片，商品名字,商城名字画到模版图中
             byte[] imageData = drawPicture(inputStream, goodPicUrl, goodName);
             ByteArrayInputStream inputStream2 = new ByteArrayInputStream(imageData);
             //存储分享图
-            LitemallStorage storageInfo = storageService.store(inputStream2, imageData.length, "image/jpeg",
+            Storage storageInfo = storageService.store(inputStream2, imageData.length, "image/jpeg",
                     getKeyName(groupon.getId().toString()));
 
             return storageInfo.getUrl();
-        } catch (WxErrorException e) {
-            logger.error(e.getMessage(), e);
-        } catch (FileNotFoundException e) {
+        }  catch (FileNotFoundException e) {
             logger.error(e.getMessage(), e);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -62,24 +60,24 @@ public class QCodeService {
      * @param goodName
      */
     public String createGoodShareImage(String goodId, String goodPicUrl, String goodName) {
-        if (!SystemConfig.isAutoCreateShareImage())
+        if (!SystemConfig.isAutoCreateShareImage()) {
             return "";
+        }
 
         try {
             //创建该商品的二维码
-            File file = wxMaService.getQrcodeService().createWxaCodeUnlimit("goods," + goodId, "pages/index/index");
+            File file = new File("");
+//                    wxMaService.getQrcodeService().createWxaCodeUnlimit("goods," + goodId, "pages/index/index");
             FileInputStream inputStream = new FileInputStream(file);
             //将商品图片，商品名字,商城名字画到模版图中
             byte[] imageData = drawPicture(inputStream, goodPicUrl, goodName);
             ByteArrayInputStream inputStream2 = new ByteArrayInputStream(imageData);
             //存储分享图
-            LitemallStorage litemallStorage = storageService.store(inputStream2, imageData.length, "image/jpeg",
+            Storage storage = storageService.store(inputStream2, imageData.length, "image/jpeg",
                     getKeyName(goodId));
 
-            return litemallStorage.getUrl();
-        } catch (WxErrorException e) {
-            logger.error(e.getMessage(), e);
-        } catch (FileNotFoundException e) {
+            return storage.getUrl();
+        }  catch (FileNotFoundException e) {
             logger.error(e.getMessage(), e);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);

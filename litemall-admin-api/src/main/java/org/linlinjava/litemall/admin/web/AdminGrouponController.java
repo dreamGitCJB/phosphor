@@ -1,5 +1,8 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -10,19 +13,20 @@ import org.linlinjava.litemall.core.task.TaskService;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallGoods;
-import org.linlinjava.litemall.db.domain.LitemallGroupon;
-import org.linlinjava.litemall.db.domain.LitemallGrouponRules;
-import org.linlinjava.litemall.db.service.LitemallGoodsService;
-import org.linlinjava.litemall.db.service.LitemallGrouponRulesService;
-import org.linlinjava.litemall.db.service.LitemallGrouponService;
-import org.linlinjava.litemall.db.util.GrouponConstant;
+import org.linlinjava.litemall.db.common.constans.GrouponConstant;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Goods;
+import org.linlinjava.litemall.db.entity.Groupon;
+import org.linlinjava.litemall.db.entity.GrouponRules;
+import org.linlinjava.litemall.db.service.IGoodsService;
+import org.linlinjava.litemall.db.service.IGrouponRulesService;
+import org.linlinjava.litemall.db.service.IGrouponService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -37,11 +41,11 @@ public class AdminGrouponController {
     private final Log logger = LogFactory.getLog(AdminGrouponController.class);
 
     @Autowired
-    private LitemallGrouponRulesService rulesService;
+    private IGrouponRulesService rulesService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
     @Autowired
-    private LitemallGrouponService grouponService;
+    private IGrouponService grouponService;
     @Autowired
     private TaskService taskService;
 
@@ -53,15 +57,23 @@ public class AdminGrouponController {
                              @RequestParam(defaultValue = "10") Integer limit,
                              @Sort @RequestParam(defaultValue = "add_time") String sort,
                              @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallGroupon> grouponList = grouponService.querySelective(grouponRuleId, page, limit, sort, order);
+
+
+        Page pageData = new Page(page, limit);
+        PageUtil.pagetoPage(pageData, sort, order);
+
+        IPage<Groupon> grouponList = grouponService.page(pageData, new LambdaQueryWrapper<Groupon>().eq(Groupon::getGrouponId, 0)
+                .eq(!StringUtils.isEmpty(grouponRuleId), Groupon::getRulesId, grouponRuleId)
+                .ne(Groupon::getStatus, GrouponConstant.STATUS_NONE));
+
 
         List<Map<String, Object>> groupons = new ArrayList<>();
-        for (LitemallGroupon groupon : grouponList) {
+        for (Groupon groupon : grouponList.getRecords()) {
             try {
                 Map<String, Object> recordData = new HashMap<>();
-                List<LitemallGroupon> subGrouponList = grouponService.queryJoinRecord(groupon.getId());
-                LitemallGrouponRules rules = rulesService.findById(groupon.getRulesId());
-                LitemallGoods goods = goodsService.findById(rules.getGoodsId());
+                List<Groupon> subGrouponList = grouponService.queryJoinRecord(groupon.getId());
+                GrouponRules rules = rulesService.getById(groupon.getRulesId());
+                Goods goods = goodsService.getById(rules.getGoodsId());
 
                 recordData.put("groupon", groupon);
                 recordData.put("subGroupons", subGrouponList);
@@ -74,7 +86,9 @@ public class AdminGrouponController {
             }
         }
 
-        return ResponseUtil.okList(groupons, grouponList);
+        IPage iPage = new PageUtil<Groupon, Map<String, Object>>().pagetoPage(grouponList, groupons);
+
+        return ResponseUtil.okPageList(iPage);
     }
 
     @RequiresPermissions("admin:groupon:list")
@@ -85,11 +99,18 @@ public class AdminGrouponController {
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallGrouponRules> rulesList = rulesService.querySelective(goodsId, page, limit, sort, order);
-        return ResponseUtil.okList(rulesList);
+
+
+
+        Page pageData = new Page(page, limit);
+        PageUtil.pagetoPage(pageData, sort, order);
+
+        IPage<GrouponRules> rulesList = rulesService.page(pageData, new LambdaQueryWrapper<GrouponRules>().eq(!StringUtils.isEmpty(goodsId),GrouponRules::getGoodsId, goodsId));
+
+        return ResponseUtil.okPageList(rulesList);
     }
 
-    private Object validate(LitemallGrouponRules grouponRules) {
+    private Object validate(GrouponRules grouponRules) {
         Integer goodsId = grouponRules.getGoodsId();
         if (goodsId == null) {
             return ResponseUtil.badArgument();
@@ -113,13 +134,13 @@ public class AdminGrouponController {
     @RequiresPermissions("admin:groupon:update")
     @RequiresPermissionsDesc(menu = {"推广管理", "团购管理"}, button = "编辑")
     @PostMapping("/update")
-    public Object update(@RequestBody LitemallGrouponRules grouponRules) {
+    public Object update(@RequestBody GrouponRules grouponRules) {
         Object error = validate(grouponRules);
         if (error != null) {
             return error;
         }
 
-        LitemallGrouponRules rules = rulesService.findById(grouponRules.getId());
+        GrouponRules rules = rulesService.getById(grouponRules.getId());
         if(rules == null){
             return ResponseUtil.badArgumentValue();
         }
@@ -128,7 +149,7 @@ public class AdminGrouponController {
         }
 
         Integer goodsId = grouponRules.getGoodsId();
-        LitemallGoods goods = goodsService.findById(goodsId);
+        Goods goods = goodsService.getById(goodsId);
         if (goods == null) {
             return ResponseUtil.badArgumentValue();
         }
@@ -136,7 +157,7 @@ public class AdminGrouponController {
         grouponRules.setGoodsName(goods.getName());
         grouponRules.setPicUrl(goods.getPicUrl());
 
-        if (rulesService.updateById(grouponRules) == 0) {
+        if (!rulesService.updateById(grouponRules)) {
             return ResponseUtil.updatedDataFailed();
         }
 
@@ -146,25 +167,31 @@ public class AdminGrouponController {
     @RequiresPermissions("admin:groupon:create")
     @RequiresPermissionsDesc(menu = {"推广管理", "团购管理"}, button = "添加")
     @PostMapping("/create")
-    public Object create(@RequestBody LitemallGrouponRules grouponRules) {
+    public Object create(@RequestBody GrouponRules grouponRules) {
         Object error = validate(grouponRules);
         if (error != null) {
             return error;
         }
 
         Integer goodsId = grouponRules.getGoodsId();
-        LitemallGoods goods = goodsService.findById(goodsId);
+        Goods goods = goodsService.getById(goodsId);
         if (goods == null) {
             return ResponseUtil.fail(AdminResponseCode.GROUPON_GOODS_UNKNOWN, "团购商品不存在");
         }
-        if(rulesService.countByGoodsId(goodsId) > 0){
+
+        int count = rulesService.count(new LambdaQueryWrapper<GrouponRules>().eq(GrouponRules::getGoodsId, goodsId)
+                .eq(GrouponRules::getStatus, GrouponConstant.RULE_STATUS_ON));
+
+        if(count > 0){
             return ResponseUtil.fail(AdminResponseCode.GROUPON_GOODS_EXISTED, "团购商品已经存在");
         }
 
         grouponRules.setGoodsName(goods.getName());
         grouponRules.setPicUrl(goods.getPicUrl());
         grouponRules.setStatus(GrouponConstant.RULE_STATUS_ON);
-        rulesService.createRules(grouponRules);
+        grouponRules.setAddTime(LocalDateTime.now());
+        grouponRules.setUpdateTime(LocalDateTime.now());
+        rulesService.save(grouponRules);
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expire = grouponRules.getExpireTime();
@@ -178,13 +205,13 @@ public class AdminGrouponController {
     @RequiresPermissions("admin:groupon:delete")
     @RequiresPermissionsDesc(menu = {"推广管理", "团购管理"}, button = "删除")
     @PostMapping("/delete")
-    public Object delete(@RequestBody LitemallGrouponRules grouponRules) {
+    public Object delete(@RequestBody GrouponRules grouponRules) {
         Integer id = grouponRules.getId();
         if (id == null) {
             return ResponseUtil.badArgument();
         }
 
-        rulesService.delete(id);
+        rulesService.removeById(id);
         return ResponseUtil.ok();
     }
 }

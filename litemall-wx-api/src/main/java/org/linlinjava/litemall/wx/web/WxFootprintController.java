@@ -1,20 +1,20 @@
 package org.linlinjava.litemall.wx.web;
 
-import com.github.pagehelper.PageInfo;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallFootprint;
-import org.linlinjava.litemall.db.domain.LitemallGoods;
-import org.linlinjava.litemall.db.service.LitemallFootprintService;
-import org.linlinjava.litemall.db.service.LitemallGoodsService;
+import org.linlinjava.litemall.db.entity.Footprint;
+import org.linlinjava.litemall.db.entity.Goods;
+import org.linlinjava.litemall.db.service.IFootprintService;
+import org.linlinjava.litemall.db.service.IGoodsService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +30,9 @@ public class WxFootprintController {
     private final Log logger = LogFactory.getLog(WxFootprintController.class);
 
     @Autowired
-    private LitemallFootprintService footprintService;
+    private IFootprintService footprintService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
 
     /**
      * 删除用户足迹
@@ -54,7 +54,7 @@ public class WxFootprintController {
         if (footprintId == null) {
             return ResponseUtil.badArgument();
         }
-        LitemallFootprint footprint = footprintService.findById(userId, footprintId);
+        Footprint footprint = footprintService.getOne(new LambdaQueryWrapper<Footprint>().eq(Footprint::getId, footprintId).eq(Footprint::getUserId, userId));
 
         if (footprint == null) {
             return ResponseUtil.badArgumentValue();
@@ -63,7 +63,7 @@ public class WxFootprintController {
             return ResponseUtil.badArgumentValue();
         }
 
-        footprintService.deleteById(footprintId);
+        footprintService.removeById(footprintId);
         return ResponseUtil.ok();
     }
 
@@ -82,16 +82,19 @@ public class WxFootprintController {
             return ResponseUtil.unlogin();
         }
 
-        List<LitemallFootprint> footprintList = footprintService.queryByAddTime(userId, page, limit);
+        Page pageDate = new Page(page, limit);
+        pageDate.setDesc("add_time");
+        List<Footprint> footprintList = footprintService.list(new LambdaQueryWrapper<Footprint>()
+                .eq(Footprint::getUserId,userId));
 
         List<Object> footprintVoList = new ArrayList<>(footprintList.size());
-        for (LitemallFootprint footprint : footprintList) {
+        for (Footprint footprint : footprintList) {
             Map<String, Object> c = new HashMap<String, Object>();
             c.put("id", footprint.getId());
             c.put("goodsId", footprint.getGoodsId());
             c.put("addTime", footprint.getAddTime());
 
-            LitemallGoods goods = goodsService.findById(footprint.getGoodsId());
+            Goods goods = goodsService.getById(footprint.getGoodsId());
             c.put("name", goods.getName());
             c.put("brief", goods.getBrief());
             c.put("picUrl", goods.getPicUrl());

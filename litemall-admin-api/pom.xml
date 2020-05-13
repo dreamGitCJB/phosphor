@@ -22,12 +22,10 @@
 
         <dependency>
             <groupId>org.linlinjava</groupId>
-            <artifactId>litemall-db</artifactId>
+            <artifactId>litemall-date</artifactId>
+            <version>0.1.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.binarywang</groupId>
-            <artifactId>weixin-java-miniapp</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger-ui</artifactId>

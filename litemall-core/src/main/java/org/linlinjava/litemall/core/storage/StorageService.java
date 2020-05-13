@@ -1,8 +1,9 @@
 package org.linlinjava.litemall.core.storage;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.linlinjava.litemall.core.util.CharUtil;
-import org.linlinjava.litemall.db.domain.LitemallStorage;
-import org.linlinjava.litemall.db.service.LitemallStorageService;
+import org.linlinjava.litemall.db.entity.Storage;
+import org.linlinjava.litemall.db.service.IStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 
@@ -15,9 +16,9 @@ import java.util.stream.Stream;
  */
 public class StorageService {
     private String active;
-    private Storage storage;
+    private IStorage storage;
     @Autowired
-    private LitemallStorageService litemallStorageService;
+    private IStorageService storageService;
 
     public String getActive() {
         return active;
@@ -27,11 +28,11 @@ public class StorageService {
         this.active = active;
     }
 
-    public Storage getStorage() {
+    public IStorage getStorage() {
         return storage;
     }
 
-    public void setStorage(Storage storage) {
+    public void setStorage(IStorage storage) {
         this.storage = storage;
     }
 
@@ -43,18 +44,18 @@ public class StorageService {
      * @param contentType   文件类型
      * @param fileName      文件索引名
      */
-    public LitemallStorage store(InputStream inputStream, long contentLength, String contentType, String fileName) {
+    public Storage store(InputStream inputStream, long contentLength, String contentType, String fileName) {
         String key = generateKey(fileName);
         storage.store(inputStream, contentLength, contentType, key);
 
         String url = generateUrl(key);
-        LitemallStorage storageInfo = new LitemallStorage();
+        Storage storageInfo = new Storage();
         storageInfo.setName(fileName);
         storageInfo.setSize((int) contentLength);
         storageInfo.setType(contentType);
         storageInfo.setKey(key);
         storageInfo.setUrl(url);
-        litemallStorageService.add(storageInfo);
+        storageService.save(storageInfo);
 
         return storageInfo;
     }
@@ -64,11 +65,11 @@ public class StorageService {
         String suffix = originalFilename.substring(index);
 
         String key = null;
-        LitemallStorage storageInfo = null;
+        Storage storageInfo = null;
 
         do {
             key = CharUtil.getRandomString(20) + suffix;
-            storageInfo = litemallStorageService.findByKey(key);
+            storageInfo = storageService.getOne(new LambdaQueryWrapper<Storage>().eq(Storage::getKey, key));
         }
         while (storageInfo != null);
 

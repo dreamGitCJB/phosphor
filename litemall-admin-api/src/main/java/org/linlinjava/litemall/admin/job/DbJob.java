@@ -2,7 +2,7 @@ package org.linlinjava.litemall.admin.job;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.linlinjava.litemall.db.util.DbUtil;
+import org.linlinjava.litemall.db.common.util.DbUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;

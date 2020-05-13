@@ -1,17 +1,21 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallCart;
-import org.linlinjava.litemall.db.domain.LitemallCoupon;
-import org.linlinjava.litemall.db.domain.LitemallCouponUser;
-import org.linlinjava.litemall.db.domain.LitemallGrouponRules;
+import org.linlinjava.litemall.db.common.constans.CouponConstant;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+
+import org.linlinjava.litemall.db.entity.Cart;
+import org.linlinjava.litemall.db.entity.Coupon;
+import org.linlinjava.litemall.db.entity.CouponUser;
+import org.linlinjava.litemall.db.entity.GrouponRules;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.CouponConstant;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.vo.CouponVo;
 import org.linlinjava.litemall.wx.util.WxResponseCode;
@@ -34,15 +38,14 @@ public class WxCouponController {
     private final Log logger = LogFactory.getLog(WxCouponController.class);
 
     @Autowired
-    private LitemallCouponService couponService;
+    private ICouponService couponService;
     @Autowired
-    private LitemallCouponUserService couponUserService;
+    private ICouponUserService couponUserService;
     @Autowired
-    private LitemallGrouponRulesService grouponRulesService;
+    private IGrouponRulesService grouponRulesService;
     @Autowired
-    private LitemallCartService cartService;
-    @Autowired
-    private CouponVerifyService couponVerifyService;
+    private ICartService cartService;
+
 
     /**
      * 优惠券列表
@@ -59,8 +62,8 @@ public class WxCouponController {
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
 
-        List<LitemallCoupon> couponList = couponService.queryList(page, limit, sort, order);
-        return ResponseUtil.okList(couponList);
+        IPage<Coupon> couponList = couponService.queryList(page, limit, sort, order);
+        return ResponseUtil.okPageList(couponList);
     }
 
     /**
@@ -76,7 +79,7 @@ public class WxCouponController {
      */
     @GetMapping("mylist")
     public Object mylist(@LoginUser Integer userId,
-                       Short status,
+                       Integer status,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
@@ -85,16 +88,20 @@ public class WxCouponController {
             return ResponseUtil.unlogin();
         }
 
-        List<LitemallCouponUser> couponUserList = couponUserService.queryList(userId, null, status, page, limit, sort, order);
-        List<CouponVo> couponVoList = change(couponUserList);
-        return ResponseUtil.okList(couponVoList, couponUserList);
+        IPage<CouponUser> couponUserIPage = couponUserService.queryList(userId, null, status, page, limit, sort, order);
+
+        List<CouponVo> couponVoList = change(couponUserIPage.getRecords());
+
+        IPage iPage = new PageUtil<CouponUser, CouponVo>().pagetoPage(couponUserIPage, couponVoList);
+
+        return ResponseUtil.okPageList(iPage);
     }
 
-    private List<CouponVo> change(List<LitemallCouponUser> couponList) {
+    private List<CouponVo> change(List<CouponUser> couponList) {
         List<CouponVo> couponVoList = new ArrayList<>(couponList.size());
-        for(LitemallCouponUser couponUser : couponList){
+        for(CouponUser couponUser : couponList){
             Integer couponId = couponUser.getCouponId();
-            LitemallCoupon coupon = couponService.findById(couponId);
+            Coupon coupon = couponService.getById(couponId);
             CouponVo couponVo = new CouponVo();
             couponVo.setId(couponUser.getId());
             couponVo.setCid(coupon.getId());
@@ -129,17 +136,17 @@ public class WxCouponController {
 
         // 团购优惠
         BigDecimal grouponPrice = new BigDecimal(0.00);
-        LitemallGrouponRules grouponRules = grouponRulesService.findById(grouponRulesId);
+        GrouponRules grouponRules = grouponRulesService.getById(grouponRulesId);
         if (grouponRules != null) {
             grouponPrice = grouponRules.getDiscount();
         }
 
         // 商品价格
-        List<LitemallCart> checkedGoodsList = null;
+        List<Cart> checkedGoodsList = null;
         if (cartId == null || cartId.equals(0)) {
             checkedGoodsList = cartService.queryByUidAndChecked(userId);
         } else {
-            LitemallCart cart = cartService.findById(userId, cartId);
+            Cart cart = cartService.findById(userId, cartId);
             if (cart == null) {
                 return ResponseUtil.badArgumentValue();
             }
@@ -147,7 +154,7 @@ public class WxCouponController {
             checkedGoodsList.add(cart);
         }
         BigDecimal checkedGoodsPrice = new BigDecimal(0.00);
-        for (LitemallCart cart : checkedGoodsList) {
+        for (Cart cart : checkedGoodsList) {
             //  只有当团购规格商品ID符合才进行团购优惠
             if (grouponRules != null && grouponRules.getGoodsId().equals(cart.getGoodsId())) {
                 checkedGoodsPrice = checkedGoodsPrice.add(cart.getPrice().subtract(grouponPrice).multiply(new BigDecimal(cart.getNumber())));
@@ -157,10 +164,10 @@ public class WxCouponController {
         }
 
         // 计算优惠券可用情况
-        List<LitemallCouponUser> couponUserList = couponUserService.queryAll(userId);
+        List<CouponUser> couponUserList = couponUserService.queryAll(userId);
         List<CouponVo> couponVoList = change(couponUserList);
         for (CouponVo cv : couponVoList) {
-            LitemallCoupon coupon = couponVerifyService.checkCoupon(userId, cv.getCid(), cv.getId(), checkedGoodsPrice);
+            Coupon coupon = couponService.checkCoupon(userId, cv.getCid(), cv.getId(), checkedGoodsPrice);
             cv.setAvailable(coupon != null);
         }
 
@@ -185,14 +192,14 @@ public class WxCouponController {
             return ResponseUtil.badArgument();
         }
 
-        LitemallCoupon coupon = couponService.findById(couponId);
+        Coupon coupon = couponService.getById(couponId);
         if(coupon == null){
             return ResponseUtil.badArgumentValue();
         }
 
         // 当前已领取数量和总数量比较
         Integer total = coupon.getTotal();
-        Integer totalCoupons = couponUserService.countCoupon(couponId);
+        Integer totalCoupons = couponUserService.count(new LambdaQueryWrapper<CouponUser>().eq(CouponUser::getCouponId, couponId));
         if((total != 0) && (totalCoupons >= total)){
             return ResponseUtil.fail(WxResponseCode.COUPON_EXCEED_LIMIT, "优惠券已领完");
         }
@@ -206,7 +213,7 @@ public class WxCouponController {
 
         // 优惠券分发类型
         // 例如注册赠券类型的优惠券不能领取
-        Short type = coupon.getType();
+        Integer type = coupon.getType();
         if(type.equals(CouponConstant.TYPE_REGISTER)){
             return ResponseUtil.fail(WxResponseCode.COUPON_RECEIVE_FAIL, "新用户优惠券自动发送");
         }
@@ -218,7 +225,7 @@ public class WxCouponController {
         }
 
         // 优惠券状态，已下架或者过期不能领取
-        Short status = coupon.getStatus();
+        Integer status = coupon.getStatus();
         if(status.equals(CouponConstant.STATUS_OUT)){
             return ResponseUtil.fail(WxResponseCode.COUPON_EXCEED_LIMIT, "优惠券已领完");
         }
@@ -227,10 +234,10 @@ public class WxCouponController {
         }
 
         // 用户领券记录
-        LitemallCouponUser couponUser = new LitemallCouponUser();
+        CouponUser couponUser = new CouponUser();
         couponUser.setCouponId(couponId);
         couponUser.setUserId(userId);
-        Short timeType = coupon.getTimeType();
+        Integer timeType = coupon.getTimeType();
         if (timeType.equals(CouponConstant.TIME_TYPE_TIME)) {
             couponUser.setStartTime(coupon.getStartTime());
             couponUser.setEndTime(coupon.getEndTime());
@@ -240,7 +247,7 @@ public class WxCouponController {
             couponUser.setStartTime(now);
             couponUser.setEndTime(now.plusDays(coupon.getDays()));
         }
-        couponUserService.add(couponUser);
+        couponUserService.save(couponUser);
 
         return ResponseUtil.ok();
     }
@@ -263,7 +270,10 @@ public class WxCouponController {
             return ResponseUtil.badArgument();
         }
 
-        LitemallCoupon coupon = couponService.findByCode(code);
+        Coupon coupon = couponService.getOne(new LambdaQueryWrapper<Coupon>()
+                .eq(Coupon::getCode, code)
+                .eq(Coupon::getStatus, CouponConstant.STATUS_NORMAL)
+                .eq(Coupon::getType, CouponConstant.TYPE_CODE));
         if(coupon == null){
             return ResponseUtil.fail(WxResponseCode.COUPON_CODE_INVALID, "优惠券不正确");
         }
@@ -271,7 +281,7 @@ public class WxCouponController {
 
         // 当前已领取数量和总数量比较
         Integer total = coupon.getTotal();
-        Integer totalCoupons = couponUserService.countCoupon(couponId);
+        Integer totalCoupons = couponUserService.count(new LambdaQueryWrapper<CouponUser>().eq(CouponUser::getCouponId, couponId));
         if((total != 0) && (totalCoupons >= total)){
             return ResponseUtil.fail(WxResponseCode.COUPON_EXCEED_LIMIT, "优惠券已兑换");
         }
@@ -285,7 +295,7 @@ public class WxCouponController {
 
         // 优惠券分发类型
         // 例如注册赠券类型的优惠券不能领取
-        Short type = coupon.getType();
+        Integer type = coupon.getType();
         if(type.equals(CouponConstant.TYPE_REGISTER)){
             return ResponseUtil.fail(WxResponseCode.COUPON_RECEIVE_FAIL, "新用户优惠券自动发送");
         }
@@ -297,7 +307,7 @@ public class WxCouponController {
         }
 
         // 优惠券状态，已下架或者过期不能领取
-        Short status = coupon.getStatus();
+        Integer status = coupon.getStatus();
         if(status.equals(CouponConstant.STATUS_OUT)){
             return ResponseUtil.fail(WxResponseCode.COUPON_EXCEED_LIMIT, "优惠券已兑换");
         }
@@ -306,10 +316,10 @@ public class WxCouponController {
         }
 
         // 用户领券记录
-        LitemallCouponUser couponUser = new LitemallCouponUser();
+        CouponUser couponUser = new CouponUser();
         couponUser.setCouponId(couponId);
         couponUser.setUserId(userId);
-        Short timeType = coupon.getTimeType();
+        Integer timeType = coupon.getTimeType();
         if (timeType.equals(CouponConstant.TIME_TYPE_TIME)) {
             couponUser.setStartTime(coupon.getStartTime());
             couponUser.setEndTime(coupon.getEndTime());
@@ -319,7 +329,7 @@ public class WxCouponController {
             couponUser.setStartTime(now);
             couponUser.setEndTime(now.plusDays(coupon.getDays()));
         }
-        couponUserService.add(couponUser);
+        couponUserService.save(couponUser);
 
         return ResponseUtil.ok();
     }

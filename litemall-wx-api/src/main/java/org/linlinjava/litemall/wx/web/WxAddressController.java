@@ -1,12 +1,13 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.RegexUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallAddress;
-import org.linlinjava.litemall.db.service.LitemallAddressService;
-import org.linlinjava.litemall.db.service.LitemallRegionService;
+import org.linlinjava.litemall.db.entity.Address;
+import org.linlinjava.litemall.db.service.IAddressService;
+import org.linlinjava.litemall.db.service.IRegionService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.service.GetRegionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +28,10 @@ public class WxAddressController extends GetRegionService {
 	private final Log logger = LogFactory.getLog(WxAddressController.class);
 
 	@Autowired
-	private LitemallAddressService addressService;
+	private IAddressService addressService;
 
 	@Autowired
-	private LitemallRegionService regionService;
+	private IRegionService regionService;
 
 
 	/**
@@ -44,7 +45,7 @@ public class WxAddressController extends GetRegionService {
 		if (userId == null) {
 			return ResponseUtil.unlogin();
 		}
-		List<LitemallAddress> addressList = addressService.queryByUid(userId);
+		List<Address> addressList = addressService.list(new LambdaQueryWrapper<Address>().eq(Address::getUserId, userId));
 		return ResponseUtil.okList(addressList);
 	}
 
@@ -61,14 +62,14 @@ public class WxAddressController extends GetRegionService {
 			return ResponseUtil.unlogin();
 		}
 
-		LitemallAddress address = addressService.query(userId, id);
+		Address address = addressService.getOne(new LambdaQueryWrapper<Address>().eq(Address::getId, id).eq(Address::getUserId, userId));
 		if (address == null) {
 			return ResponseUtil.badArgumentValue();
 		}
 		return ResponseUtil.ok(address);
 	}
 
-	private Object validate(LitemallAddress address) {
+	private Object validate(Address address) {
 		String name = address.getName();
 		if (StringUtils.isEmpty(name)) {
 			return ResponseUtil.badArgument();
@@ -124,7 +125,7 @@ public class WxAddressController extends GetRegionService {
 	 * @return 添加或更新操作结果
 	 */
 	@PostMapping("save")
-	public Object save(@LoginUser Integer userId, @RequestBody LitemallAddress address) {
+	public Object save(@LoginUser Integer userId, @RequestBody Address address) {
 		if (userId == null) {
 			return ResponseUtil.unlogin();
 		}
@@ -141,9 +142,9 @@ public class WxAddressController extends GetRegionService {
 
 			address.setId(null);
 			address.setUserId(userId);
-			addressService.add(address);
+			addressService.save(address);
 		} else {
-			LitemallAddress litemallAddress = addressService.query(userId, address.getId());
+			Address litemallAddress = addressService.getOne(new LambdaQueryWrapper<Address>().eq(Address::getId, address.getId()).eq(Address::getUserId, userId));
 			if (litemallAddress == null) {
 				return ResponseUtil.badArgumentValue();
 			}
@@ -154,7 +155,7 @@ public class WxAddressController extends GetRegionService {
 			}
 
 			address.setUserId(userId);
-			addressService.update(address);
+			addressService.updateById(address);
 		}
 		return ResponseUtil.ok(address.getId());
 	}
@@ -167,7 +168,7 @@ public class WxAddressController extends GetRegionService {
 	 * @return 删除操作结果
 	 */
 	@PostMapping("delete")
-	public Object delete(@LoginUser Integer userId, @RequestBody LitemallAddress address) {
+	public Object delete(@LoginUser Integer userId, @RequestBody Address address) {
 		if (userId == null) {
 			return ResponseUtil.unlogin();
 		}
@@ -175,12 +176,12 @@ public class WxAddressController extends GetRegionService {
 		if (id == null) {
 			return ResponseUtil.badArgument();
 		}
-		LitemallAddress litemallAddress = addressService.query(userId, id);
+		Address litemallAddress = addressService.getOne(new LambdaQueryWrapper<Address>().eq(Address::getId, id).eq(Address::getUserId, userId));
 		if (litemallAddress == null) {
 			return ResponseUtil.badArgumentValue();
 		}
 
-		addressService.delete(id);
+		addressService.removeById(id);
 		return ResponseUtil.ok();
 	}
 }

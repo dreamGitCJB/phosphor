@@ -1,15 +1,16 @@
 package org.linlinjava.litemall.admin.job;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.system.SystemConfig;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.entity.Order;
+import org.linlinjava.litemall.db.entity.OrderGoods;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.OrderUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,15 +23,15 @@ public class OrderJob {
     private final Log logger = LogFactory.getLog(OrderJob.class);
 
     @Autowired
-    private LitemallOrderGoodsService orderGoodsService;
+    private IOrderGoodsService orderGoodsService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
     @Autowired
-    private LitemallGoodsProductService productService;
+    private IGoodsProductService productService;
     @Autowired
-    private LitemallGrouponService grouponService;
+    private IGrouponService grouponService;
     @Autowired
-    private LitemallGrouponRulesService rulesService;
+    private IGrouponRulesService rulesService;
 
     /**
      * 自动确认订单
@@ -45,13 +46,17 @@ public class OrderJob {
     public void checkOrderUnconfirm() {
         logger.info("系统开启定时任务检查订单是否已经超期自动确认收货");
 
-        List<LitemallOrder> orderList = orderService.queryUnconfirm(SystemConfig.getOrderUnconfirm());
-        for (LitemallOrder order : orderList) {
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expired = now.minusDays(SystemConfig.getOrderUnconfirm());
+        List<Order> orderList = orderService.list(new LambdaQueryWrapper<Order>().eq(Order::getOrderStatus, OrderUtil.STATUS_SHIP)
+                .lt(Order::getShipTime, expired));
+        for (Order order : orderList) {
 
             // 设置订单已取消状态
             order.setOrderStatus(OrderUtil.STATUS_AUTO_CONFIRM);
             order.setConfirmTime(LocalDateTime.now());
-            if (orderService.updateWithOptimisticLocker(order) == 0) {
+            if (!orderService.updateWithOptimisticLocker(order)) {
                 logger.info("订单 ID=" + order.getId() + " 数据已经更新，放弃自动确认收货");
             } else {
                 logger.info("订单 ID=" + order.getId() + " 已经超期自动确认收货");
@@ -74,13 +79,18 @@ public class OrderJob {
     public void checkOrderComment() {
         logger.info("系统开启任务检查订单是否已经超期未评价");
 
-        List<LitemallOrder> orderList = orderService.queryComment(SystemConfig.getOrderComment());
-        for (LitemallOrder order : orderList) {
-            order.setComments((short) 0);
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expired = now.minusDays(SystemConfig.getOrderComment());
+
+        List<Order> orderList = orderService.list(new LambdaQueryWrapper<Order>().gt(Order::getComments, 0)
+                .lt(Order::getShipTime, expired));
+        for (Order order : orderList) {
+            order.setComments(0);
             orderService.updateWithOptimisticLocker(order);
 
-            List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
-            for (LitemallOrderGoods orderGoods : orderGoodsList) {
+            List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
+            for (OrderGoods orderGoods : orderGoodsList) {
                 orderGoods.setComment(-1);
                 orderGoodsService.updateById(orderGoods);
             }

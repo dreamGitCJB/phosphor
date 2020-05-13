@@ -1,15 +1,18 @@
 package org.linlinjava.litemall.admin.task;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.task.Task;
 import org.linlinjava.litemall.core.util.BeanUtil;
-import org.linlinjava.litemall.db.domain.LitemallGroupon;
-import org.linlinjava.litemall.db.domain.LitemallGrouponRules;
-import org.linlinjava.litemall.db.domain.LitemallOrder;
-import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.GrouponConstant;
-import org.linlinjava.litemall.db.util.OrderUtil;
+import org.linlinjava.litemall.db.common.constans.GrouponConstant;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.entity.Groupon;
+import org.linlinjava.litemall.db.entity.GrouponRules;
+import org.linlinjava.litemall.db.entity.Order;
+import org.linlinjava.litemall.db.service.IGrouponRulesService;
+import org.linlinjava.litemall.db.service.IGrouponService;
+import org.linlinjava.litemall.db.service.IOrderService;
 
 import java.util.List;
 
@@ -26,11 +29,11 @@ public class GrouponRuleExpiredTask extends Task {
     public void run() {
         logger.info("系统开始处理延时任务---团购规则过期---" + this.grouponRuleId);
 
-        LitemallOrderService orderService = BeanUtil.getBean(LitemallOrderService.class);
-        LitemallGrouponService grouponService = BeanUtil.getBean(LitemallGrouponService.class);
-        LitemallGrouponRulesService grouponRulesService = BeanUtil.getBean(LitemallGrouponRulesService.class);
+        IOrderService orderService = BeanUtil.getBean(IOrderService.class);
+        IGrouponService grouponService = BeanUtil.getBean(IGrouponService.class);
+        IGrouponRulesService grouponRulesService = BeanUtil.getBean(IGrouponRulesService.class);
 
-        LitemallGrouponRules grouponRules = grouponRulesService.findById(grouponRuleId);
+        GrouponRules grouponRules = grouponRulesService.getById(grouponRuleId);
         if(grouponRules == null){
             return;
         }
@@ -42,11 +45,12 @@ public class GrouponRuleExpiredTask extends Task {
         grouponRules.setStatus(GrouponConstant.RULE_STATUS_DOWN_EXPIRE);
         grouponRulesService.updateById(grouponRules);
 
-        List<LitemallGroupon> grouponList = grouponService.queryByRuleId(grouponRuleId);
+        List<Groupon> grouponList = grouponService.list(new LambdaQueryWrapper<Groupon>()
+                .eq(Groupon::getRulesId,grouponRuleId));
         // 用户团购处理
-        for(LitemallGroupon groupon : grouponList){
-            Short status = groupon.getStatus();
-            LitemallOrder order = orderService.findById(groupon.getOrderId());
+        for(Groupon groupon : grouponList){
+            Integer status = groupon.getStatus();
+            Order order = orderService.getById(groupon.getOrderId());
             if(status.equals(GrouponConstant.STATUS_NONE)){
                 groupon.setStatus(GrouponConstant.STATUS_FAIL);
                 grouponService.updateById(groupon);

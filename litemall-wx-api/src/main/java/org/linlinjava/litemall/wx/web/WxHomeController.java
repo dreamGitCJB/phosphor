@@ -1,11 +1,13 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.system.SystemConfig;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallCategory;
-import org.linlinjava.litemall.db.domain.LitemallGoods;
+import org.linlinjava.litemall.db.entity.Ad;
+import org.linlinjava.litemall.db.entity.Category;
+import org.linlinjava.litemall.db.entity.Goods;
 import org.linlinjava.litemall.db.service.*;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.service.HomeCacheManager;
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 首页服务
@@ -33,25 +36,25 @@ public class WxHomeController {
     private final Log logger = LogFactory.getLog(WxHomeController.class);
 
     @Autowired
-    private LitemallAdService adService;
+    private IAdService adService;
 
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
 
     @Autowired
-    private LitemallBrandService brandService;
+    private IBrandService brandService;
 
     @Autowired
-    private LitemallTopicService topicService;
+    private ITopicService topicService;
 
     @Autowired
-    private LitemallCategoryService categoryService;
+    private ICategoryService categoryService;
 
     @Autowired
     private WxGrouponRuleService grouponService;
 
     @Autowired
-    private LitemallCouponService couponService;
+    private ICouponService couponService;
 
     private final static ArrayBlockingQueue<Runnable> WORK_QUEUE = new ArrayBlockingQueue<>(9);
 
@@ -83,28 +86,28 @@ public class WxHomeController {
         }
         ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-        Callable<List> bannerListCallable = () -> adService.queryIndex();
+        Callable<List> bannerListCallable = () -> adService.list(new LambdaQueryWrapper<Ad>().eq(Ad::getEnabled, true).eq(Ad::getPosition, 1));
 
-        Callable<List> channelListCallable = () -> categoryService.queryChannel();
+        Callable<List> channelListCallable = () -> categoryService.list(new LambdaQueryWrapper<Category>().eq(Category::getLevel, "L1"));
 
         Callable<List> couponListCallable;
         if(userId == null){
-            couponListCallable = () -> couponService.queryList(0, 3);
+            couponListCallable = () -> couponService.queryList(0, 3,  "add_time","desc").getRecords();
         } else {
             couponListCallable = () -> couponService.queryAvailableList(userId,0, 3);
         }
 
 
-        Callable<List> newGoodsListCallable = () -> goodsService.queryByNew(0, SystemConfig.getNewLimit());
+        Callable<List> newGoodsListCallable = () -> goodsService.list(new LambdaQueryWrapper<Goods>().eq(Goods::getIsNew,true).eq(Goods::getIsOnSale, true).orderByDesc(Goods::getAddTime)).stream().limit(SystemConfig.getNewLimit()).collect(Collectors.toList());
 
-        Callable<List> hotGoodsListCallable = () -> goodsService.queryByHot(0, SystemConfig.getHotLimit());
+        Callable<List> hotGoodsListCallable = () -> goodsService.list(new LambdaQueryWrapper<Goods>().eq(Goods::getIsNew,true).eq(Goods::getIsOnSale, true).orderByDesc(Goods::getAddTime)).stream().limit(SystemConfig.getHotLimit()).collect(Collectors.toList());;
 
-        Callable<List> brandListCallable = () -> brandService.query(0, SystemConfig.getBrandLimit());
+        Callable<List> brandListCallable = () -> brandService.query(0, SystemConfig.getBrandLimit(), null, null).getRecords();
 
-        Callable<List> topicListCallable = () -> topicService.queryList(0, SystemConfig.getTopicLimit());
+        Callable<List> topicListCallable = () -> topicService.queryList(0, SystemConfig.getTopicLimit(),"desc","add_time").getRecords();
 
         //团购专区
-        Callable<List> grouponListCallable = () -> grouponService.queryList(0, 5);
+        Callable<List> grouponListCallable = () -> grouponService.queryList(0, 5).getRecords();
 
         Callable<List> floorGoodsListCallable = this::getCategoryList;
 
@@ -152,19 +155,20 @@ public class WxHomeController {
 
     private List<Map> getCategoryList() {
         List<Map> categoryList = new ArrayList<>();
-        List<LitemallCategory> catL1List = categoryService.queryL1WithoutRecommend(0, SystemConfig.getCatlogListLimit());
-        for (LitemallCategory catL1 : catL1List) {
-            List<LitemallCategory> catL2List = categoryService.queryByPid(catL1.getId());
+
+        List<Category> catL1List = categoryService.list(new LambdaQueryWrapper<Category>().eq(Category::getLevel, "L1").ne(Category::getName,"推荐"));
+        for (Category catL1 : catL1List) {
+            List<Category> catL2List = categoryService.queryByPid(catL1.getId());
             List<Integer> l2List = new ArrayList<>();
-            for (LitemallCategory catL2 : catL2List) {
+            for (Category catL2 : catL2List) {
                 l2List.add(catL2.getId());
             }
 
-            List<LitemallGoods> categoryGoods;
+            List<Goods> categoryGoods;
             if (l2List.size() == 0) {
                 categoryGoods = new ArrayList<>();
             } else {
-                categoryGoods = goodsService.queryByCategory(l2List, 0, SystemConfig.getCatlogMoreLimit());
+                categoryGoods = goodsService.queryByCategory(l2List, 0, SystemConfig.getCatlogMoreLimit()).getRecords();
             }
 
             Map<String, Object> catGoods = new HashMap<>();

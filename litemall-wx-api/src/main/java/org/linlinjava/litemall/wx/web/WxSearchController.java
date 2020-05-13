@@ -1,22 +1,24 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallKeyword;
-import org.linlinjava.litemall.db.domain.LitemallSearchHistory;
-import org.linlinjava.litemall.db.service.LitemallKeywordService;
-import org.linlinjava.litemall.db.service.LitemallSearchHistoryService;
+import org.linlinjava.litemall.db.entity.Keyword;
+import org.linlinjava.litemall.db.entity.SearchHistory;
+import org.linlinjava.litemall.db.service.IKeywordService;
+import org.linlinjava.litemall.db.service.ISearchHistoryService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.NotEmpty;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 商品搜索服务
@@ -30,9 +32,9 @@ public class WxSearchController {
     private final Log logger = LogFactory.getLog(WxSearchController.class);
 
     @Autowired
-    private LitemallKeywordService keywordsService;
+    private IKeywordService keywordsService;
     @Autowired
-    private LitemallSearchHistoryService searchHistoryService;
+    private ISearchHistoryService searchHistoryService;
 
     /**
      * 搜索页面信息
@@ -46,14 +48,14 @@ public class WxSearchController {
     @GetMapping("index")
     public Object index(@LoginUser Integer userId) {
         //取出输入框默认的关键词
-        LitemallKeyword defaultKeyword = keywordsService.queryDefault();
+        Keyword defaultKeyword = keywordsService.getOne(new LambdaQueryWrapper<Keyword>().eq(Keyword::getIsDefault, true));
         //取出热闹关键词
-        List<LitemallKeyword> hotKeywordList = keywordsService.queryHots();
+        List<Keyword> hotKeywordList = keywordsService.list(new LambdaQueryWrapper<Keyword>().eq(Keyword::getIsHot, true));
 
-        List<LitemallSearchHistory> historyList = null;
+        List<SearchHistory> historyList = null;
         if (userId != null) {
             //取出用户历史关键字
-            historyList = searchHistoryService.queryByUid(userId);
+            historyList = searchHistoryService.list(new LambdaQueryWrapper<SearchHistory>().eq(SearchHistory::getUserId, userId));
         } else {
             historyList = new ArrayList<>(0);
         }
@@ -74,16 +76,13 @@ public class WxSearchController {
      * @return 合适的关键字
      */
     @GetMapping("helper")
-    public Object helper(@NotEmpty String keyword,
-                         @RequestParam(defaultValue = "1") Integer page,
-                         @RequestParam(defaultValue = "10") Integer limit) {
-        List<LitemallKeyword> keywordsList = keywordsService.queryByKeyword(keyword, page, limit);
-        String[] keys = new String[keywordsList.size()];
-        int index = 0;
-        for (LitemallKeyword key : keywordsList) {
-            keys[index++] = key.getKeyword();
-        }
-        return ResponseUtil.ok(keys);
+    public Object helper(@NotEmpty String keyword) {
+
+        List<Keyword> keywordsList = keywordsService.list(new LambdaQueryWrapper<Keyword>().like(Keyword::getKeyword, keyword));
+
+        Set<String> collect = keywordsList.stream().map(Keyword::getKeyword).limit(10).collect(Collectors.toSet());
+
+        return ResponseUtil.ok(collect);
     }
 
     /**
@@ -97,8 +96,7 @@ public class WxSearchController {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
-
-        searchHistoryService.deleteByUid(userId);
+        searchHistoryService.remove(new LambdaQueryWrapper<SearchHistory>().eq(SearchHistory::getUserId, userId));
         return ResponseUtil.ok();
     }
 }

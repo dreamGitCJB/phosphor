@@ -15,10 +15,10 @@ import org.linlinjava.litemall.admin.util.PermissionUtil;
 import org.linlinjava.litemall.core.util.IpUtil;
 import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallAdmin;
-import org.linlinjava.litemall.db.service.LitemallAdminService;
-import org.linlinjava.litemall.db.service.LitemallPermissionService;
-import org.linlinjava.litemall.db.service.LitemallRoleService;
+import org.linlinjava.litemall.db.entity.Admin;
+import org.linlinjava.litemall.db.service.IAdminService;
+import org.linlinjava.litemall.db.service.IPermissionService;
+import org.linlinjava.litemall.db.service.IRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
@@ -38,11 +38,11 @@ public class AdminAuthController {
     private final Log logger = LogFactory.getLog(AdminAuthController.class);
 
     @Autowired
-    private LitemallAdminService adminService;
+    private IAdminService adminService;
     @Autowired
-    private LitemallRoleService roleService;
+    private IRoleService roleService;
     @Autowired
-    private LitemallPermissionService permissionService;
+    private IPermissionService permissionService;
     @Autowired
     private LogHelper logHelper;
 
@@ -74,7 +74,7 @@ public class AdminAuthController {
         }
 
         currentUser = SecurityUtils.getSubject();
-        LitemallAdmin admin = (LitemallAdmin) currentUser.getPrincipal();
+        Admin admin = (Admin) currentUser.getPrincipal();
         admin.setLastLoginIp(IpUtil.getIpAddr(request));
         admin.setLastLoginTime(LocalDateTime.now());
         adminService.updateById(admin);
@@ -110,7 +110,7 @@ public class AdminAuthController {
     @GetMapping("/info")
     public Object info() {
         Subject currentUser = SecurityUtils.getSubject();
-        LitemallAdmin admin = (LitemallAdmin) currentUser.getPrincipal();
+        Admin admin = (Admin) currentUser.getPrincipal();
 
         Map<String, Object> data = new HashMap<>();
         data.put("name", admin.getUsername());

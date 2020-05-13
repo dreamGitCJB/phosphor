@@ -1,5 +1,8 @@
 package org.linlinjava.litemall.wx.service;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.github.binarywang.wxpay.bean.notify.WxPayNotifyResponse;
 import com.github.binarywang.wxpay.bean.notify.WxPayOrderNotifyResult;
 import com.github.binarywang.wxpay.bean.order.WxPayMpOrderResult;
@@ -22,12 +25,14 @@ import org.linlinjava.litemall.core.task.TaskService;
 import org.linlinjava.litemall.core.util.DateTimeUtil;
 import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.common.constans.CouponUserConstant;
+import org.linlinjava.litemall.db.common.constans.GrouponConstant;
+import org.linlinjava.litemall.db.common.util.OrderHandleOption;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.*;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.CouponUserConstant;
-import org.linlinjava.litemall.db.util.GrouponConstant;
-import org.linlinjava.litemall.db.util.OrderHandleOption;
-import org.linlinjava.litemall.db.util.OrderUtil;
+
 import org.linlinjava.litemall.core.util.IpUtil;
 import org.linlinjava.litemall.wx.task.OrderUnpaidTask;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,43 +75,44 @@ public class WxOrderService {
     private final Log logger = LogFactory.getLog(WxOrderService.class);
 
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
     @Autowired
-    private LitemallOrderGoodsService orderGoodsService;
+    private IOrderGoodsService orderGoodsService;
     @Autowired
-    private LitemallAddressService addressService;
+    private IAddressService addressService;
     @Autowired
-    private LitemallCartService cartService;
+    private ICartService cartService;
     @Autowired
-    private LitemallRegionService regionService;
+    private IRegionService regionService;
     @Autowired
-    private LitemallGoodsProductService productService;
+    private IGoodsProductService productService;
     @Autowired
     private WxPayService wxPayService;
     @Autowired
     private NotifyService notifyService;
     @Autowired
-    private LitemallGrouponRulesService grouponRulesService;
+    private IGrouponRulesService grouponRulesService;
     @Autowired
-    private LitemallGrouponService grouponService;
+    private IGrouponService grouponService;
     @Autowired
     private QCodeService qCodeService;
     @Autowired
     private ExpressService expressService;
     @Autowired
-    private LitemallCommentService commentService;
+    private ICommentService commentService;
     @Autowired
-    private LitemallCouponService couponService;
+    private ICouponService couponService;
     @Autowired
-    private LitemallCouponUserService couponUserService;
+    private ICouponUserService couponUserService;
+
     @Autowired
-    private CouponVerifyService couponVerifyService;
+    private IAftersaleService aftersaleService;
     @Autowired
     private TaskService taskService;
-    @Autowired
-    private LitemallAftersaleService aftersaleService;
+
+
 
     /**
      * 订单列表
@@ -128,10 +134,12 @@ public class WxOrderService {
         }
 
         List<Short> orderStatus = OrderUtil.orderStatus(showType);
-        List<LitemallOrder> orderList = orderService.queryByOrderStatus(userId, orderStatus, page, limit, sort, order);
 
-        List<Map<String, Object>> orderVoList = new ArrayList<>(orderList.size());
-        for (LitemallOrder o : orderList) {
+
+        IPage<Order> orderPage = orderService.queryByOrderStatus(userId, orderStatus, page, limit, sort, order);
+
+        List<Map<String, Object>> orderVoList = new ArrayList<>(orderPage.getRecords().size());
+        for (Order o : orderPage.getRecords()) {
             Map<String, Object> orderVo = new HashMap<>();
             orderVo.put("id", o.getId());
             orderVo.put("orderSn", o.getOrderSn());
@@ -140,16 +148,18 @@ public class WxOrderService {
             orderVo.put("handleOption", OrderUtil.build(o));
             orderVo.put("aftersaleStatus", o.getAftersaleStatus());
 
-            LitemallGroupon groupon = grouponService.queryByOrderId(o.getId());
+            Groupon groupon = grouponService.getOne(new LambdaQueryWrapper<Groupon>().eq(Groupon::getOrderId,o.getId()));
             if (groupon != null) {
                 orderVo.put("isGroupin", true);
             } else {
                 orderVo.put("isGroupin", false);
             }
 
-            List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(o.getId());
+            List<OrderGoods> orderGoodsList = orderGoodsService.list(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, o.getId()));
+
+
             List<Map<String, Object>> orderGoodsVoList = new ArrayList<>(orderGoodsList.size());
-            for (LitemallOrderGoods orderGoods : orderGoodsList) {
+            for (OrderGoods orderGoods : orderGoodsList) {
                 Map<String, Object> orderGoodsVo = new HashMap<>();
                 orderGoodsVo.put("id", orderGoods.getId());
                 orderGoodsVo.put("goodsName", orderGoods.getGoodsName());
@@ -160,11 +170,11 @@ public class WxOrderService {
                 orderGoodsVoList.add(orderGoodsVo);
             }
             orderVo.put("goodsList", orderGoodsVoList);
-
             orderVoList.add(orderVo);
         }
+        IPage mapPage = new PageUtil().pagetoPage(orderPage, orderVoList);
 
-        return ResponseUtil.okList(orderVoList, orderList);
+        return ResponseUtil.okPageList(mapPage);
     }
 
     /**
@@ -180,7 +190,8 @@ public class WxOrderService {
         }
 
         // 订单信息
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getId, orderId).eq(Order::getUserId, userId));
+
         if (null == order) {
             return ResponseUtil.fail(ORDER_UNKNOWN, "订单不存在");
         }
@@ -206,7 +217,7 @@ public class WxOrderService {
         orderVo.put("expName", expressService.getVendorName(order.getShipChannel()));
         orderVo.put("expNo", order.getShipSn());
 
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
+        List<OrderGoods> orderGoodsList = orderGoodsService.list(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, order.getId()));
 
         Map<String, Object> result = new HashMap<>();
         result.put("orderInfo", orderVo);
@@ -262,7 +273,7 @@ public class WxOrderService {
 
         //如果是团购项目,验证活动是否有效
         if (grouponRulesId != null && grouponRulesId > 0) {
-            LitemallGrouponRules rules = grouponRulesService.findById(grouponRulesId);
+            GrouponRules rules = grouponRulesService.getById(grouponRulesId);
             //找不到记录
             if (rules == null) {
                 return ResponseUtil.badArgument();
@@ -278,18 +289,21 @@ public class WxOrderService {
 
             if (grouponLinkId != null && grouponLinkId > 0) {
                 //团购人数已满
-                if(grouponService.countGroupon(grouponLinkId) >= (rules.getDiscountMember() - 1)){
+                int grouponCount = grouponService.count(new LambdaQueryWrapper<Groupon>().eq(Groupon::getGrouponId, grouponLinkId).ne(Groupon::getStatus, GrouponConstant.STATUS_NONE));
+                if(grouponCount >= (rules.getDiscountMember() - 1)){
                     return ResponseUtil.fail(GROUPON_FULL, "团购活动人数已满!");
                 }
                 // NOTE
                 // 这里业务方面允许用户多次开团，以及多次参团，
                 // 但是会限制以下两点：
                 // （1）不允许参加已经加入的团购
-                if(grouponService.hasJoin(userId, grouponLinkId)){
+                int joinCount = grouponService.count(new LambdaQueryWrapper<Groupon>().eq(Groupon::getUserId, userId).eq(Groupon::getGrouponId, grouponLinkId).ne(Groupon::getStatus, GrouponConstant.STATUS_NONE));
+
+                if(joinCount != 0){
                     return ResponseUtil.fail(GROUPON_JOIN, "团购活动已经参加!");
                 }
                 // （2）不允许参加自己开团的团购
-                LitemallGroupon groupon = grouponService.queryById(userId, grouponLinkId);
+                Groupon groupon = grouponService.getOne(new LambdaQueryWrapper<Groupon>().eq(Groupon::getUserId,userId).eq(Groupon::getId, grouponLinkId));
                 if(groupon.getCreatorUserId().equals(userId)){
                     return ResponseUtil.fail(GROUPON_JOIN, "团购活动已经参加!");
                 }
@@ -301,24 +315,24 @@ public class WxOrderService {
         }
 
         // 收货地址
-        LitemallAddress checkedAddress = addressService.query(userId, addressId);
+        Address checkedAddress = addressService.getOne(new LambdaQueryWrapper<Address>().eq(Address::getUserId, userCouponId).eq(Address::getId, addressId));
         if (checkedAddress == null) {
             return ResponseUtil.badArgument();
         }
 
         // 团购优惠
         BigDecimal grouponPrice = new BigDecimal(0);
-        LitemallGrouponRules grouponRules = grouponRulesService.findById(grouponRulesId);
+        GrouponRules grouponRules = grouponRulesService.getById(grouponRulesId);
         if (grouponRules != null) {
             grouponPrice = grouponRules.getDiscount();
         }
 
         // 货品价格
-        List<LitemallCart> checkedGoodsList = null;
+        List<Cart> checkedGoodsList = null;
         if (cartId.equals(0)) {
-            checkedGoodsList = cartService.queryByUidAndChecked(userId);
+            checkedGoodsList = cartService.list(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId,userId).eq(Cart::getChecked, Boolean.TRUE));
         } else {
-            LitemallCart cart = cartService.findById(cartId);
+            Cart cart = cartService.getById(cartId);
             checkedGoodsList = new ArrayList<>(1);
             checkedGoodsList.add(cart);
         }
@@ -326,7 +340,7 @@ public class WxOrderService {
             return ResponseUtil.badArgumentValue();
         }
         BigDecimal checkedGoodsPrice = new BigDecimal(0);
-        for (LitemallCart checkGoods : checkedGoodsList) {
+        for (Cart checkGoods : checkedGoodsList) {
             //  只有当团购规格商品ID符合才进行团购优惠
             if (grouponRules != null && grouponRules.getGoodsId().equals(checkGoods.getGoodsId())) {
                 checkedGoodsPrice = checkedGoodsPrice.add(checkGoods.getPrice().subtract(grouponPrice).multiply(new BigDecimal(checkGoods.getNumber())));
@@ -340,7 +354,7 @@ public class WxOrderService {
         BigDecimal couponPrice = new BigDecimal(0);
         // 如果couponId=0则没有优惠券，couponId=-1则不使用优惠券
         if (couponId != 0 && couponId != -1) {
-            LitemallCoupon coupon = couponVerifyService.checkCoupon(userId, couponId, userCouponId, checkedGoodsPrice);
+            Coupon coupon = couponService.checkCoupon(userId, couponId, userCouponId, checkedGoodsPrice);
             if (coupon == null) {
                 return ResponseUtil.badArgumentValue();
             }
@@ -363,11 +377,11 @@ public class WxOrderService {
         BigDecimal actualPrice = orderTotalPrice.subtract(integralPrice);
 
         Integer orderId = null;
-        LitemallOrder order = null;
+        Order order = null;
         // 订单
-        order = new LitemallOrder();
+        order = new Order();
         order.setUserId(userId);
-        order.setOrderSn(orderService.generateOrderSn(userId));
+        order.setOrderSn(OrderUtil.generateOrderSn(userId));
         order.setOrderStatus(OrderUtil.STATUS_CREATE);
         order.setConsignee(checkedAddress.getName());
         order.setMobile(checkedAddress.getTel());
@@ -389,13 +403,13 @@ public class WxOrderService {
         }
 
         // 添加订单表项
-        orderService.add(order);
+        orderService.save(order);
         orderId = order.getId();
 
         // 添加订单商品表项
-        for (LitemallCart cartGoods : checkedGoodsList) {
+        for (Cart cartGoods : checkedGoodsList) {
             // 订单商品
-            LitemallOrderGoods orderGoods = new LitemallOrderGoods();
+            OrderGoods orderGoods = new OrderGoods();
             orderGoods.setOrderId(order.getId());
             orderGoods.setGoodsId(cartGoods.getGoodsId());
             orderGoods.setGoodsSn(cartGoods.getGoodsSn());
@@ -407,16 +421,16 @@ public class WxOrderService {
             orderGoods.setSpecifications(cartGoods.getSpecifications());
             orderGoods.setAddTime(LocalDateTime.now());
 
-            orderGoodsService.add(orderGoods);
+            orderGoodsService.save(orderGoods);
         }
 
         // 删除购物车里面的商品信息
-        cartService.clearGoods(userId);
+        cartService.remove(new LambdaQueryWrapper<Cart>().eq(Cart::getUserId, userId).eq(Cart::getChecked, Boolean.TRUE));
 
         // 商品货品数量减少
-        for (LitemallCart checkGoods : checkedGoodsList) {
+        for (Cart checkGoods : checkedGoodsList) {
             Integer productId = checkGoods.getProductId();
-            LitemallGoodsProduct product = productService.findById(productId);
+            GoodsProduct product = productService.getById(productId);
 
             int remainNumber = product.getNumber() - checkGoods.getNumber();
             if (remainNumber < 0) {
@@ -429,16 +443,16 @@ public class WxOrderService {
 
         // 如果使用了优惠券，设置优惠券使用状态
         if (couponId != 0 && couponId != -1) {
-            LitemallCouponUser couponUser = couponUserService.findById(userCouponId);
+            CouponUser couponUser = couponUserService.getById(userCouponId);
             couponUser.setStatus(CouponUserConstant.STATUS_USED);
             couponUser.setUsedTime(LocalDateTime.now());
             couponUser.setOrderId(orderId);
-            couponUserService.update(couponUser);
+            couponUserService.updateById(couponUser);
         }
 
         //如果是团购项目，添加团购信息
         if (grouponRulesId != null && grouponRulesId > 0) {
-            LitemallGroupon groupon = new LitemallGroupon();
+            Groupon groupon = new Groupon();
             groupon.setOrderId(orderId);
             groupon.setStatus(GrouponConstant.STATUS_NONE);
             groupon.setUserId(userId);
@@ -447,16 +461,16 @@ public class WxOrderService {
             //参与者
             if (grouponLinkId != null && grouponLinkId > 0) {
                 //参与的团购记录
-                LitemallGroupon baseGroupon = grouponService.queryById(grouponLinkId);
+                Groupon baseGroupon = grouponService.getById(grouponLinkId);
                 groupon.setCreatorUserId(baseGroupon.getCreatorUserId());
                 groupon.setGrouponId(grouponLinkId);
                 groupon.setShareUrl(baseGroupon.getShareUrl());
-                grouponService.createGroupon(groupon);
+                grouponService.save(groupon);
             } else {
                 groupon.setCreatorUserId(userId);
                 groupon.setCreatorUserTime(LocalDateTime.now());
                 groupon.setGrouponId(0);
-                grouponService.createGroupon(groupon);
+                grouponService.save(groupon);
                 grouponLinkId = groupon.getId();
             }
         }
@@ -497,7 +511,7 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
         if (order == null) {
             return ResponseUtil.badArgumentValue();
         }
@@ -516,16 +530,16 @@ public class WxOrderService {
         // 设置订单已取消状态
         order.setOrderStatus(OrderUtil.STATUS_CANCEL);
         order.setEndTime(LocalDateTime.now());
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             throw new RuntimeException("更新数据已失效");
         }
 
         // 商品货品数量增加
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(orderId);
-        for (LitemallOrderGoods orderGoods : orderGoodsList) {
+        List<OrderGoods> orderGoodsList = orderGoodsService.list(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, orderId));
+        for (OrderGoods orderGoods : orderGoodsList) {
             Integer productId = orderGoods.getProductId();
-            Short number = orderGoods.getNumber();
-            if (productService.addStock(productId, number) == 0) {
+            Integer number = orderGoods.getNumber();
+            if (!productService.addStock(productId, number)) {
                 throw new RuntimeException("商品货品库存增加失败");
             }
         }
@@ -554,7 +568,8 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
+
         if (order == null) {
             return ResponseUtil.badArgumentValue();
         }
@@ -568,7 +583,7 @@ public class WxOrderService {
             return ResponseUtil.fail(ORDER_INVALID_OPERATION, "订单不能支付");
         }
 
-        LitemallUser user = userService.findById(userId);
+        User user = userService.getById(userId);
         String openid = user.getWeixinOpenid();
         if (openid == null) {
             return ResponseUtil.fail(AUTH_OPENID_UNACCESS, "订单不能支付");
@@ -592,7 +607,7 @@ public class WxOrderService {
             return ResponseUtil.fail(ORDER_PAY_FAIL, "订单不能支付");
         }
 
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             return ResponseUtil.updatedDateExpired();
         }
         return ResponseUtil.ok(result);
@@ -616,7 +631,8 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
+
         if (order == null) {
             return ResponseUtil.badArgumentValue();
         }
@@ -698,7 +714,8 @@ public class WxOrderService {
 
         // 分转化成元
         String totalFee = BaseWxPayResult.fenToYuan(result.getTotalFee());
-        LitemallOrder order = orderService.findBySn(orderSn);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getOrderSn, orderSn));
+
         if (order == null) {
             return WxPayNotifyResponse.fail("订单不存在 sn=" + orderSn);
         }
@@ -716,14 +733,14 @@ public class WxOrderService {
         order.setPayId(payId);
         order.setPayTime(LocalDateTime.now());
         order.setOrderStatus(OrderUtil.STATUS_PAY);
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             return WxPayNotifyResponse.fail("更新数据已失效");
         }
 
         //  支付成功，有团购信息，更新团购信息
-        LitemallGroupon groupon = grouponService.queryByOrderId(order.getId());
+        Groupon groupon = grouponService.getOne(new LambdaQueryWrapper<Groupon>().eq(Groupon::getOrderId, order.getId()));
         if (groupon != null) {
-            LitemallGrouponRules grouponRules = grouponRulesService.findById(groupon.getRulesId());
+            GrouponRules grouponRules = grouponRulesService.getById(groupon.getRulesId());
 
             //仅当发起者才创建分享图片
             if (groupon.getGrouponId() == 0) {
@@ -731,19 +748,19 @@ public class WxOrderService {
                 groupon.setShareUrl(url);
             }
             groupon.setStatus(GrouponConstant.STATUS_ON);
-            if (grouponService.updateById(groupon) == 0) {
+            if (!grouponService.updateById(groupon)) {
                 return WxPayNotifyResponse.fail("更新数据已失效");
             }
 
 
-            List<LitemallGroupon> grouponList = grouponService.queryJoinRecord(groupon.getGrouponId());
+            List<Groupon> grouponList = grouponService.list(new LambdaQueryWrapper<Groupon>().eq(Groupon::getGrouponId, groupon.getGrouponId()).ne(Groupon::getStatus, GrouponConstant.STATUS_NONE).orderByDesc(Groupon::getAddTime));
             if (groupon.getGrouponId() != 0 && (grouponList.size() >= grouponRules.getDiscountMember() - 1)) {
-                for (LitemallGroupon grouponActivity : grouponList) {
+                for (Groupon grouponActivity : grouponList) {
                     grouponActivity.setStatus(GrouponConstant.STATUS_SUCCEED);
                     grouponService.updateById(grouponActivity);
                 }
 
-                LitemallGroupon grouponSource = grouponService.queryById(groupon.getGrouponId());
+                Groupon grouponSource = grouponService.getById(groupon.getGrouponId());
                 grouponSource.setStatus(GrouponConstant.STATUS_SUCCEED);
                 grouponService.updateById(grouponSource);
             }
@@ -790,7 +807,7 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
         if (order == null) {
             return ResponseUtil.badArgument();
         }
@@ -805,7 +822,7 @@ public class WxOrderService {
 
         // 设置订单申请退款状态
         order.setOrderStatus(OrderUtil.STATUS_REFUND);
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             return ResponseUtil.updatedDateExpired();
         }
 
@@ -835,7 +852,8 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
+
         if (order == null) {
             return ResponseUtil.badArgument();
         }
@@ -848,12 +866,12 @@ public class WxOrderService {
             return ResponseUtil.fail(ORDER_INVALID_OPERATION, "订单不能确认收货");
         }
 
-        Short comments = orderGoodsService.getComments(orderId);
+        Integer comments = orderGoodsService.count(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, orderId));
         order.setComments(comments);
 
         order.setOrderStatus(OrderUtil.STATUS_CONFIRM);
         order.setConfirmTime(LocalDateTime.now());
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             return ResponseUtil.updatedDateExpired();
         }
         return ResponseUtil.ok();
@@ -878,7 +896,7 @@ public class WxOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
         if (order == null) {
             return ResponseUtil.badArgument();
         }
@@ -893,9 +911,9 @@ public class WxOrderService {
 
         // 订单order_status没有字段用于标识删除
         // 而是存在专门的delete字段表示是否删除
-        orderService.deleteById(orderId);
+        orderService.removeById(orderId);
         // 售后也同时删除
-        aftersaleService.deleteByOrderId(userId, orderId);
+        aftersaleService.remove(new LambdaQueryWrapper<Aftersale>().eq(Aftersale::getUserId, userId).eq(Aftersale::getOrderId, orderId));
 
         return ResponseUtil.ok();
     }
@@ -912,12 +930,12 @@ public class WxOrderService {
         if (userId == null) {
             return ResponseUtil.unlogin();
         }
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
         if (order == null) {
             return ResponseUtil.badArgument();
         }
 
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.findByOidAndGid(orderId, goodsId);
+        List<OrderGoods> orderGoodsList = orderGoodsService.list(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, orderId).eq(OrderGoods::getGoodsId, goodsId));
         int size = orderGoodsList.size();
 
         Assert.state(size < 2, "存在多个符合条件的订单商品");
@@ -926,7 +944,7 @@ public class WxOrderService {
             return ResponseUtil.badArgumentValue();
         }
 
-        LitemallOrderGoods orderGoods = orderGoodsList.get(0);
+        OrderGoods orderGoods = orderGoodsList.get(0);
         return ResponseUtil.ok(orderGoods);
     }
 
@@ -948,16 +966,16 @@ public class WxOrderService {
         if (orderGoodsId == null) {
             return ResponseUtil.badArgument();
         }
-        LitemallOrderGoods orderGoods = orderGoodsService.findById(orderGoodsId);
+        OrderGoods orderGoods = orderGoodsService.getById(orderGoodsId);
         if (orderGoods == null) {
             return ResponseUtil.badArgumentValue();
         }
         Integer orderId = orderGoods.getOrderId();
-        LitemallOrder order = orderService.findById(userId, orderId);
+        Order order = orderService.getOne(new LambdaQueryWrapper<Order>().eq(Order::getUserId, userId).eq(Order::getId, orderId));
         if (order == null) {
             return ResponseUtil.badArgumentValue();
         }
-        Short orderStatus = order.getOrderStatus();
+        Integer orderStatus = order.getOrderStatus();
         if (!OrderUtil.isConfirmStatus(order) && !OrderUtil.isAutoConfirmStatus(order)) {
             return ResponseUtil.fail(ORDER_INVALID_OPERATION, "当前商品不能评价");
         }
@@ -984,14 +1002,14 @@ public class WxOrderService {
         }
 
         // 1. 创建评价
-        LitemallComment comment = new LitemallComment();
+        Comment comment = new Comment();
         comment.setUserId(userId);
-        comment.setType((byte) 0);
+        comment.setType(0);
         comment.setValueId(orderGoods.getGoodsId());
-        comment.setStar(star.shortValue());
+        comment.setStar(star);
         comment.setContent(content);
         comment.setHasPicture(hasPicture);
-        comment.setPicUrls(picUrls.toArray(new String[]{}));
+        comment.setPicUrls(JSON.toJSONString(picUrls));
         commentService.save(comment);
 
         // 2. 更新订单商品的评价列表
@@ -999,7 +1017,7 @@ public class WxOrderService {
         orderGoodsService.updateById(orderGoods);
 
         // 3. 更新订单中未评价的订单商品可评价数量
-        Short commentCount = order.getComments();
+        Integer commentCount = order.getComments();
         if (commentCount > 0) {
             commentCount--;
         }

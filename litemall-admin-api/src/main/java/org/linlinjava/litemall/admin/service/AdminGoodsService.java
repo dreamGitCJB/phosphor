@@ -1,12 +1,14 @@
 package org.linlinjava.litemall.admin.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.admin.dto.GoodsAllinone;
 import org.linlinjava.litemall.admin.vo.CatVo;
 import org.linlinjava.litemall.core.qcode.QCodeService;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.entity.*;
 import org.linlinjava.litemall.db.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,30 +28,30 @@ public class AdminGoodsService {
     private final Log logger = LogFactory.getLog(AdminGoodsService.class);
 
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
     @Autowired
-    private LitemallGoodsSpecificationService specificationService;
+    private IGoodsSpecificationService specificationService;
     @Autowired
-    private LitemallGoodsAttributeService attributeService;
+    private IGoodsAttributeService attributeService;
     @Autowired
-    private LitemallGoodsProductService productService;
+    private IGoodsProductService productService;
     @Autowired
-    private LitemallCategoryService categoryService;
+    private ICategoryService categoryService;
     @Autowired
-    private LitemallBrandService brandService;
+    private IBrandService brandService;
     @Autowired
-    private LitemallCartService cartService;
+    private ICartService cartService;
     @Autowired
     private QCodeService qCodeService;
 
     public Object list(Integer goodsId, String goodsSn, String name,
                        Integer page, Integer limit, String sort, String order) {
-        List<LitemallGoods> goodsList = goodsService.querySelective(goodsId, goodsSn, name, page, limit, sort, order);
-        return ResponseUtil.okList(goodsList);
+        IPage<Goods> goodsList = goodsService.querySelective(goodsId, goodsSn, name, page, limit, sort, order);
+        return ResponseUtil.okPageList(goodsList);
     }
 
     private Object validate(GoodsAllinone goodsAllinone) {
-        LitemallGoods goods = goodsAllinone.getGoods();
+        Goods goods = goodsAllinone.getGoods();
         String name = goods.getName();
         if (StringUtils.isEmpty(name)) {
             return ResponseUtil.badArgument();
@@ -61,20 +63,20 @@ public class AdminGoodsService {
         // 品牌商可以不设置，如果设置则需要验证品牌商存在
         Integer brandId = goods.getBrandId();
         if (brandId != null && brandId != 0) {
-            if (brandService.findById(brandId) == null) {
+            if (brandService.getById(brandId) == null) {
                 return ResponseUtil.badArgumentValue();
             }
         }
         // 分类可以不设置，如果设置则需要验证分类存在
         Integer categoryId = goods.getCategoryId();
         if (categoryId != null && categoryId != 0) {
-            if (categoryService.findById(categoryId) == null) {
+            if (categoryService.getById(categoryId) == null) {
                 return ResponseUtil.badArgumentValue();
             }
         }
 
-        LitemallGoodsAttribute[] attributes = goodsAllinone.getAttributes();
-        for (LitemallGoodsAttribute attribute : attributes) {
+        GoodsAttribute[] attributes = goodsAllinone.getAttributes();
+        for (GoodsAttribute attribute : attributes) {
             String attr = attribute.getAttribute();
             if (StringUtils.isEmpty(attr)) {
                 return ResponseUtil.badArgument();
@@ -85,8 +87,8 @@ public class AdminGoodsService {
             }
         }
 
-        LitemallGoodsSpecification[] specifications = goodsAllinone.getSpecifications();
-        for (LitemallGoodsSpecification specification : specifications) {
+        GoodsSpecification[] specifications = goodsAllinone.getSpecifications();
+        for (GoodsSpecification specification : specifications) {
             String spec = specification.getSpecification();
             if (StringUtils.isEmpty(spec)) {
                 return ResponseUtil.badArgument();
@@ -97,8 +99,8 @@ public class AdminGoodsService {
             }
         }
 
-        LitemallGoodsProduct[] products = goodsAllinone.getProducts();
-        for (LitemallGoodsProduct product : products) {
+        GoodsProduct[] products = goodsAllinone.getProducts();
+        for (GoodsProduct product : products) {
             Integer number = product.getNumber();
             if (number == null || number < 0) {
                 return ResponseUtil.badArgument();
@@ -147,10 +149,10 @@ public class AdminGoodsService {
             return error;
         }
 
-        LitemallGoods goods = goodsAllinone.getGoods();
-        LitemallGoodsAttribute[] attributes = goodsAllinone.getAttributes();
-        LitemallGoodsSpecification[] specifications = goodsAllinone.getSpecifications();
-        LitemallGoodsProduct[] products = goodsAllinone.getProducts();
+        Goods goods = goodsAllinone.getGoods();
+        GoodsAttribute[] attributes = goodsAllinone.getAttributes();
+        GoodsSpecification[] specifications = goodsAllinone.getSpecifications();
+        GoodsProduct[] products = goodsAllinone.getProducts();
 
         //将生成的分享图片地址写入数据库
         String url = qCodeService.createGoodShareImage(goods.getId().toString(), goods.getPicUrl(), goods.getName());
@@ -158,7 +160,7 @@ public class AdminGoodsService {
 
         // 商品表里面有一个字段retailPrice记录当前商品的最低价
         BigDecimal retailPrice = new BigDecimal(Integer.MAX_VALUE);
-        for (LitemallGoodsProduct product : products) {
+        for (GoodsProduct product : products) {
             BigDecimal productPrice = product.getPrice();
             if(retailPrice.compareTo(productPrice) == 1){
                 retailPrice = productPrice;
@@ -167,14 +169,14 @@ public class AdminGoodsService {
         goods.setRetailPrice(retailPrice);
         
         // 商品基本信息表litemall_goods
-        if (goodsService.updateById(goods) == 0) {
+        if (!goodsService.updateById(goods)) {
             throw new RuntimeException("更新数据失败");
         }
 
         Integer gid = goods.getId();
 
         // 商品规格表litemall_goods_specification
-        for (LitemallGoodsSpecification specification : specifications) {
+        for (GoodsSpecification specification : specifications) {
             // 目前只支持更新规格表的图片字段
             if(specification.getUpdateTime() == null){
                 specification.setSpecification(null);
@@ -184,20 +186,20 @@ public class AdminGoodsService {
         }
 
         // 商品货品表litemall_product
-        for (LitemallGoodsProduct product : products) {
+        for (GoodsProduct product : products) {
             if(product.getUpdateTime() == null) {
                 productService.updateById(product);
             }
         }
 
         // 商品参数表litemall_goods_attribute
-        for (LitemallGoodsAttribute attribute : attributes) {
+        for (GoodsAttribute attribute : attributes) {
             if (attribute.getId() == null || attribute.getId().equals(0)){
                 attribute.setGoodsId(goods.getId());
-                attributeService.add(attribute);
+                attributeService.save(attribute);
             }
             else if(attribute.getDeleted()){
-                attributeService.deleteById(attribute.getId());
+                attributeService.removeById(attribute.getId());
             }
             else if(attribute.getUpdateTime() == null){
                 attributeService.updateById(attribute);
@@ -206,25 +208,33 @@ public class AdminGoodsService {
 
         // 这里需要注意的是购物车litemall_cart有些字段是拷贝商品的一些字段，因此需要及时更新
         // 目前这些字段是goods_sn, goods_name, price, pic_url
-        for (LitemallGoodsProduct product : products) {
-            cartService.updateProduct(product.getId(), goods.getGoodsSn(), goods.getName(), product.getPrice(), product.getUrl());
+        for (GoodsProduct product : products) {
+
+            Cart cart = new Cart();
+            cart.setPrice(product.getPrice());
+            cart.setPicUrl(product.getUrl());
+            cart.setGoodsSn(goods.getGoodsSn());
+            cart.setGoodsName(goods.getName());
+
+            cartService.update(cart, new LambdaQueryWrapper<Cart>().eq(Cart::getProductId, product.getId()));
         }
 
         return ResponseUtil.ok();
     }
 
     @Transactional
-    public Object delete(LitemallGoods goods) {
+    public Object delete(Goods goods) {
         Integer id = goods.getId();
         if (id == null) {
             return ResponseUtil.badArgument();
         }
 
         Integer gid = goods.getId();
-        goodsService.deleteById(gid);
-        specificationService.deleteByGid(gid);
-        attributeService.deleteByGid(gid);
-        productService.deleteByGid(gid);
+        goodsService.removeById(gid);
+        specificationService.remove(new LambdaQueryWrapper<GoodsSpecification>().eq(GoodsSpecification::getGoodsId, gid));
+        attributeService.remove(new LambdaQueryWrapper<GoodsAttribute>().eq(GoodsAttribute::getGoodsId, gid));
+        productService.remove(new LambdaQueryWrapper<GoodsProduct>().eq(GoodsProduct::getGoodsId, gid));
+
         return ResponseUtil.ok();
     }
 
@@ -235,19 +245,20 @@ public class AdminGoodsService {
             return error;
         }
 
-        LitemallGoods goods = goodsAllinone.getGoods();
-        LitemallGoodsAttribute[] attributes = goodsAllinone.getAttributes();
-        LitemallGoodsSpecification[] specifications = goodsAllinone.getSpecifications();
-        LitemallGoodsProduct[] products = goodsAllinone.getProducts();
+        Goods goods = goodsAllinone.getGoods();
+        GoodsAttribute[] attributes = goodsAllinone.getAttributes();
+        GoodsSpecification[] specifications = goodsAllinone.getSpecifications();
+        GoodsProduct[] products = goodsAllinone.getProducts();
 
         String name = goods.getName();
-        if (goodsService.checkExistByName(name)) {
+        int count = goodsService.count(new LambdaQueryWrapper<Goods>().eq(Goods::getIsOnSale, true).eq(Goods::getName, name));
+        if (count > 0) {
             return ResponseUtil.fail(GOODS_NAME_EXIST, "商品名已经存在");
         }
 
         // 商品表里面有一个字段retailPrice记录当前商品的最低价
         BigDecimal retailPrice = new BigDecimal(Integer.MAX_VALUE);
-        for (LitemallGoodsProduct product : products) {
+        for (GoodsProduct product : products) {
             BigDecimal productPrice = product.getPrice();
             if(retailPrice.compareTo(productPrice) == 1){
                 retailPrice = productPrice;
@@ -256,33 +267,33 @@ public class AdminGoodsService {
         goods.setRetailPrice(retailPrice);
 
         // 商品基本信息表litemall_goods
-        goodsService.add(goods);
+        goodsService.save(goods);
 
         //将生成的分享图片地址写入数据库
         String url = qCodeService.createGoodShareImage(goods.getId().toString(), goods.getPicUrl(), goods.getName());
         if (!StringUtils.isEmpty(url)) {
             goods.setShareUrl(url);
-            if (goodsService.updateById(goods) == 0) {
+            if (!goodsService.updateById(goods)) {
                 throw new RuntimeException("更新数据失败");
             }
         }
 
         // 商品规格表litemall_goods_specification
-        for (LitemallGoodsSpecification specification : specifications) {
+        for (GoodsSpecification specification : specifications) {
             specification.setGoodsId(goods.getId());
-            specificationService.add(specification);
+            specificationService.save(specification);
         }
 
         // 商品参数表litemall_goods_attribute
-        for (LitemallGoodsAttribute attribute : attributes) {
+        for (GoodsAttribute attribute : attributes) {
             attribute.setGoodsId(goods.getId());
-            attributeService.add(attribute);
+            attributeService.save(attribute);
         }
 
         // 商品货品表litemall_product
-        for (LitemallGoodsProduct product : products) {
+        for (GoodsProduct product : products) {
             product.setGoodsId(goods.getId());
-            productService.add(product);
+            productService.save(product);
         }
         return ResponseUtil.ok();
     }
@@ -290,17 +301,17 @@ public class AdminGoodsService {
     public Object list2() {
         // http://element-cn.eleme.io/#/zh-CN/component/cascader
         // 管理员设置“所属分类”
-        List<LitemallCategory> l1CatList = categoryService.queryL1();
+        List<Category> l1CatList = categoryService.queryL1();
         List<CatVo> categoryList = new ArrayList<>(l1CatList.size());
 
-        for (LitemallCategory l1 : l1CatList) {
+        for (Category l1 : l1CatList) {
             CatVo l1CatVo = new CatVo();
             l1CatVo.setValue(l1.getId());
             l1CatVo.setLabel(l1.getName());
 
-            List<LitemallCategory> l2CatList = categoryService.queryByPid(l1.getId());
+            List<Category> l2CatList = categoryService.queryByPid(l1.getId());
             List<CatVo> children = new ArrayList<>(l2CatList.size());
-            for (LitemallCategory l2 : l2CatList) {
+            for (Category l2 : l2CatList) {
                 CatVo l2CatVo = new CatVo();
                 l2CatVo.setValue(l2.getId());
                 l2CatVo.setLabel(l2.getName());
@@ -313,9 +324,9 @@ public class AdminGoodsService {
 
         // http://element-cn.eleme.io/#/zh-CN/component/select
         // 管理员设置“所属品牌商”
-        List<LitemallBrand> list = brandService.all();
+        List<Brand> list = brandService.list();
         List<Map<String, Object>> brandList = new ArrayList<>(l1CatList.size());
-        for (LitemallBrand brand : list) {
+        for (Brand brand : list) {
             Map<String, Object> b = new HashMap<>(2);
             b.put("value", brand.getId());
             b.put("label", brand.getName());
@@ -329,13 +340,13 @@ public class AdminGoodsService {
     }
 
     public Object detail(Integer id) {
-        LitemallGoods goods = goodsService.findById(id);
-        List<LitemallGoodsProduct> products = productService.queryByGid(id);
-        List<LitemallGoodsSpecification> specifications = specificationService.queryByGid(id);
-        List<LitemallGoodsAttribute> attributes = attributeService.queryByGid(id);
+        Goods goods = goodsService.getById(id);
+        List<GoodsProduct> products = productService.queryByGid(id);
+        List<GoodsSpecification> specifications = specificationService.list(new LambdaQueryWrapper<GoodsSpecification>().eq(GoodsSpecification::getGoodsId, id));
+        List<GoodsAttribute> attributes = attributeService.list(new LambdaQueryWrapper<GoodsAttribute>().eq(GoodsAttribute::getGoodsId, id));
 
         Integer categoryId = goods.getCategoryId();
-        LitemallCategory category = categoryService.findById(categoryId);
+        Category category = categoryService.getById(categoryId);
         Integer[] categoryIds = new Integer[]{};
         if (category != null) {
             Integer parentCategoryId = category.getPid();

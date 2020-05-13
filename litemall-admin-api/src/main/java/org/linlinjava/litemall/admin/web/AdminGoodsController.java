@@ -8,7 +8,7 @@ import org.linlinjava.litemall.admin.dto.GoodsAllinone;
 import org.linlinjava.litemall.admin.service.AdminGoodsService;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallGoods;
+import org.linlinjava.litemall.db.entity.Goods;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -74,7 +74,7 @@ public class AdminGoodsController {
     @RequiresPermissions("admin:goods:delete")
     @RequiresPermissionsDesc(menu = {"商品管理", "商品管理"}, button = "删除")
     @PostMapping("/delete")
-    public Object delete(@RequestBody LitemallGoods goods) {
+    public Object delete(@RequestBody Goods goods) {
         return adminGoodsService.delete(goods);
     }
 

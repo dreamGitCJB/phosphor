@@ -1,5 +1,6 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -7,10 +8,11 @@ import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallCollect;
-import org.linlinjava.litemall.db.domain.LitemallGoods;
-import org.linlinjava.litemall.db.service.LitemallCollectService;
-import org.linlinjava.litemall.db.service.LitemallGoodsService;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Collect;
+import org.linlinjava.litemall.db.entity.Goods;
+import org.linlinjava.litemall.db.service.ICollectService;
+import org.linlinjava.litemall.db.service.IGoodsService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -32,9 +34,9 @@ public class WxCollectController {
     private final Log logger = LogFactory.getLog(WxCollectController.class);
 
     @Autowired
-    private LitemallCollectService collectService;
+    private ICollectService collectService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
 
     /**
      * 用户收藏列表
@@ -47,7 +49,7 @@ public class WxCollectController {
      */
     @GetMapping("list")
     public Object list(@LoginUser Integer userId,
-                       @NotNull Byte type,
+                       @NotNull Integer type,
                        @RequestParam(defaultValue = "1") Integer page,
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
@@ -56,16 +58,16 @@ public class WxCollectController {
             return ResponseUtil.unlogin();
         }
 
-        List<LitemallCollect> collectList = collectService.queryByType(userId, type, page, limit, sort, order);
+        IPage<Collect> collectIPage = collectService.queryByType(userId, type, page, limit, sort, order);
 
-        List<Object> collects = new ArrayList<>(collectList.size());
-        for (LitemallCollect collect : collectList) {
+        List<Object> collects = new ArrayList<>(collectIPage.getRecords().size());
+        for (Collect collect : collectIPage.getRecords()) {
             Map<String, Object> c = new HashMap<String, Object>();
             c.put("id", collect.getId());
             c.put("type", collect.getType());
             c.put("valueId", collect.getValueId());
 
-            LitemallGoods goods = goodsService.findById(collect.getValueId());
+            Goods goods = goodsService.getById(collect.getValueId());
             c.put("name", goods.getName());
             c.put("brief", goods.getBrief());
             c.put("picUrl", goods.getPicUrl());
@@ -74,7 +76,9 @@ public class WxCollectController {
             collects.add(c);
         }
 
-        return ResponseUtil.okList(collects, collectList);
+        IPage iPage = new PageUtil().pagetoPage(collectIPage, collects);
+
+        return ResponseUtil.okPageList(iPage);
     }
 
     /**
@@ -92,22 +96,22 @@ public class WxCollectController {
             return ResponseUtil.unlogin();
         }
 
-        Byte type = JacksonUtil.parseByte(body, "type");
+        Integer type = JacksonUtil.parseInteger(body, "type");
         Integer valueId = JacksonUtil.parseInteger(body, "valueId");
         if (!ObjectUtils.allNotNull(type, valueId)) {
             return ResponseUtil.badArgument();
         }
 
-        LitemallCollect collect = collectService.queryByTypeAndValue(userId, type, valueId);
+        Collect collect = collectService.queryByTypeAndValue(userId, type, valueId);
 
         if (collect != null) {
-            collectService.deleteById(collect.getId());
+            collectService.removeById(collect.getId());
         } else {
-            collect = new LitemallCollect();
+            collect = new Collect();
             collect.setUserId(userId);
             collect.setValueId(valueId);
             collect.setType(type);
-            collectService.add(collect);
+            collectService.save(collect);
         }
 
         return ResponseUtil.ok();

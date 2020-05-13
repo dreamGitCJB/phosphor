@@ -1,5 +1,8 @@
 package org.linlinjava.litemall.admin.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.binarywang.wxpay.bean.request.WxPayRefundRequest;
 import com.github.binarywang.wxpay.bean.result.WxPayRefundResult;
 import com.github.binarywang.wxpay.exception.WxPayException;
@@ -10,12 +13,13 @@ import org.linlinjava.litemall.core.notify.NotifyService;
 import org.linlinjava.litemall.core.notify.NotifyType;
 import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallComment;
-import org.linlinjava.litemall.db.domain.LitemallOrder;
-import org.linlinjava.litemall.db.domain.LitemallOrderGoods;
-import org.linlinjava.litemall.db.domain.UserVo;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Comment;
+import org.linlinjava.litemall.db.entity.Order;
+import org.linlinjava.litemall.db.entity.OrderGoods;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.OrderUtil;
+import org.linlinjava.litemall.db.vo.UserVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,15 +39,15 @@ public class AdminOrderService {
     private final Log logger = LogFactory.getLog(AdminOrderService.class);
 
     @Autowired
-    private LitemallOrderGoodsService orderGoodsService;
+    private IOrderGoodsService orderGoodsService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
     @Autowired
-    private LitemallGoodsProductService productService;
+    private IGoodsProductService productService;
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
     @Autowired
-    private LitemallCommentService commentService;
+    private ICommentService commentService;
     @Autowired
     private WxPayService wxPayService;
     @Autowired
@@ -53,14 +57,23 @@ public class AdminOrderService {
 
     public Object list(Integer userId, String orderSn, LocalDateTime start, LocalDateTime end, List<Short> orderStatusArray,
                        Integer page, Integer limit, String sort, String order) {
-        List<LitemallOrder> orderList = orderService.querySelective(userId, orderSn, start, end, orderStatusArray, page, limit,
-                sort, order);
-        return ResponseUtil.okList(orderList);
+
+        Page pageData = new Page(page,limit);
+
+        PageUtil.pagetoPage(pageData,sort,order);
+
+        IPage<Order> orderList = orderService.page(pageData, new LambdaQueryWrapper<Order>()
+                .eq(!StringUtils.isEmpty(userId),Order::getUserId, userId)
+                .eq(!StringUtils.isEmpty(orderSn), Order::getOrderSn, orderSn)
+                .gt(start != null,Order::getAddTime, start)
+                .lt(end != null, Order::getAddTime, end)
+                .in(orderStatusArray != null && orderStatusArray.size() > 0, Order::getOrderStatus, orderStatusArray));
+        return ResponseUtil.okPageList(orderList);
     }
 
     public Object detail(Integer id) {
-        LitemallOrder order = orderService.findById(id);
-        List<LitemallOrderGoods> orderGoods = orderGoodsService.queryByOid(id);
+        Order order = orderService.getById(id);
+        List<OrderGoods> orderGoods = orderGoodsService.queryByOid(id);
         UserVo user = userService.findUserVoById(order.getUserId());
         Map<String, Object> data = new HashMap<>();
         data.put("order", order);
@@ -97,7 +110,7 @@ public class AdminOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(orderId);
+        Order order = orderService.getById(orderId);
         if (order == null) {
             return ResponseUtil.badArgument();
         }
@@ -145,16 +158,16 @@ public class AdminOrderService {
         order.setRefundType("微信退款接口");
         order.setRefundContent(wxPayRefundResult.getRefundId());
         order.setRefundTime(now);
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             throw new RuntimeException("更新数据已失效");
         }
 
         // 商品货品数量增加
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(orderId);
-        for (LitemallOrderGoods orderGoods : orderGoodsList) {
+        List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(orderId);
+        for (OrderGoods orderGoods : orderGoodsList) {
             Integer productId = orderGoods.getProductId();
-            Short number = orderGoods.getNumber();
-            if (productService.addStock(productId, number) == 0) {
+            Integer number = orderGoods.getNumber();
+            if (!productService.addStock(productId, number)) {
                 throw new RuntimeException("商品货品库存增加失败");
             }
         }
@@ -187,7 +200,7 @@ public class AdminOrderService {
             return ResponseUtil.badArgument();
         }
 
-        LitemallOrder order = orderService.findById(orderId);
+        Order order = orderService.getById(orderId);
         if (order == null) {
             return ResponseUtil.badArgument();
         }
@@ -201,7 +214,7 @@ public class AdminOrderService {
         order.setShipSn(shipSn);
         order.setShipChannel(shipChannel);
         order.setShipTime(LocalDateTime.now());
-        if (orderService.updateWithOptimisticLocker(order) == 0) {
+        if (!orderService.updateWithOptimisticLocker(order)) {
             return ResponseUtil.updatedDateExpired();
         }
 
@@ -226,22 +239,22 @@ public class AdminOrderService {
      */
     public Object delete(String body) {
         Integer orderId = JacksonUtil.parseInteger(body, "orderId");
-        LitemallOrder order = orderService.findById(orderId);
+        Order order = orderService.getById(orderId);
         if (order == null) {
             return ResponseUtil.badArgument();
         }
 
         // 如果订单不是关闭状态(已取消、系统取消、已退款、用户已确认、系统已确认)，则不能删除
-        Short status = order.getOrderStatus();
+        Integer status = order.getOrderStatus();
         if (!status.equals(OrderUtil.STATUS_CANCEL) && !status.equals(OrderUtil.STATUS_AUTO_CANCEL) &&
                 !status.equals(OrderUtil.STATUS_CONFIRM) &&!status.equals(OrderUtil.STATUS_AUTO_CONFIRM) &&
                 !status.equals(OrderUtil.STATUS_REFUND_CONFIRM)) {
             return ResponseUtil.fail(ORDER_DELETE_FAILED, "订单不能删除");
         }
         // 删除订单
-        orderService.deleteById(orderId);
+        orderService.removeById(orderId);
         // 删除订单商品
-        orderGoodsService.deleteByOrderId(orderId);
+        orderGoodsService.remove(new LambdaQueryWrapper<OrderGoods>().eq(OrderGoods::getOrderId, order));
         logHelper.logOrderSucceed("删除", "订单编号 " + order.getOrderSn());
         return ResponseUtil.ok();
     }
@@ -260,7 +273,7 @@ public class AdminOrderService {
             return ResponseUtil.badArgument();
         }
         // 目前只支持回复一次
-        LitemallComment comment = commentService.findById(commentId);
+        Comment comment = commentService.getById(commentId);
         if(comment == null){
             return ResponseUtil.badArgument();
         }

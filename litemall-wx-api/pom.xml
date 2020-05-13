@@ -30,7 +30,8 @@
 
         <dependency>
             <groupId>org.linlinjava</groupId>
-            <artifactId>litemall-db</artifactId>
+            <artifactId>litemall-date</artifactId>
+            <version>0.1.0</version>
         </dependency>
 
         <dependency>

@@ -6,7 +6,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.linlinjava.litemall.admin.annotation.RequiresPermissionsDesc;
 import org.linlinjava.litemall.admin.vo.StatVo;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.service.StatService;
+import org.linlinjava.litemall.db.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,13 +23,13 @@ public class AdminStatController {
     private final Log logger = LogFactory.getLog(AdminStatController.class);
 
     @Autowired
-    private StatService statService;
+    private IUserService userService;
 
     @RequiresPermissions("admin:stat:user")
     @RequiresPermissionsDesc(menu = {"统计管理", "用户统计"}, button = "查询")
     @GetMapping("/user")
     public Object statUser() {
-        List<Map> rows = statService.statUser();
+        List<Map> rows = userService.statUser();
         String[] columns = new String[]{"day", "users"};
         StatVo statVo = new StatVo();
         statVo.setColumns(columns);
@@ -41,7 +41,7 @@ public class AdminStatController {
     @RequiresPermissionsDesc(menu = {"统计管理", "订单统计"}, button = "查询")
     @GetMapping("/order")
     public Object statOrder() {
-        List<Map> rows = statService.statOrder();
+        List<Map> rows = userService.statOrder();
         String[] columns = new String[]{"day", "orders", "customers", "amount", "pcr"};
         StatVo statVo = new StatVo();
         statVo.setColumns(columns);
@@ -54,7 +54,7 @@ public class AdminStatController {
     @RequiresPermissionsDesc(menu = {"统计管理", "商品统计"}, button = "查询")
     @GetMapping("/goods")
     public Object statGoods() {
-        List<Map> rows = statService.statGoods();
+        List<Map> rows = userService.statGoods();
         String[] columns = new String[]{"day", "orders", "products", "amount"};
         StatVo statVo = new StatVo();
         statVo.setColumns(columns);

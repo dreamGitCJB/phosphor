@@ -1,6 +1,7 @@
 package org.linlinjava.litemall.wx.web;
 
-import com.github.pagehelper.PageInfo;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mysql.jdbc.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -8,7 +9,7 @@ import org.linlinjava.litemall.core.system.SystemConfig;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.entity.*;
 import org.linlinjava.litemall.db.service.*;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 商品服务
@@ -35,43 +37,43 @@ public class WxGoodsController {
 	private final Log logger = LogFactory.getLog(WxGoodsController.class);
 
 	@Autowired
-	private LitemallGoodsService goodsService;
+	private IGoodsService goodsService;
 
 	@Autowired
-	private LitemallGoodsProductService productService;
+	private IGoodsProductService productService;
 
 	@Autowired
-	private LitemallIssueService goodsIssueService;
+	private IIssueService goodsIssueService;
 
 	@Autowired
-	private LitemallGoodsAttributeService goodsAttributeService;
+	private IGoodsAttributeService goodsAttributeService;
 
 	@Autowired
-	private LitemallBrandService brandService;
+	private IBrandService brandService;
 
 	@Autowired
-	private LitemallCommentService commentService;
+	private ICommentService commentService;
 
 	@Autowired
-	private LitemallUserService userService;
+	private IUserService userService;
 
 	@Autowired
-	private LitemallCollectService collectService;
+	private ICollectService collectService;
 
 	@Autowired
-	private LitemallFootprintService footprintService;
+	private IFootprintService footprintService;
 
 	@Autowired
-	private LitemallCategoryService categoryService;
+	private ICategoryService categoryService;
 
 	@Autowired
-	private LitemallSearchHistoryService searchHistoryService;
+	private ISearchHistoryService searchHistoryService;
 
 	@Autowired
-	private LitemallGoodsSpecificationService goodsSpecificationService;
+	private IGoodsSpecificationService goodsSpecificationService;
 
 	@Autowired
-	private LitemallGrouponRulesService rulesService;
+	private IGrouponRulesService rulesService;
 
 	private final static ArrayBlockingQueue<Runnable> WORK_QUEUE = new ArrayBlockingQueue<>(9);
 
@@ -92,10 +94,10 @@ public class WxGoodsController {
 	@GetMapping("detail")
 	public Object detail(@LoginUser Integer userId, @NotNull Integer id) {
 		// 商品信息
-		LitemallGoods info = goodsService.findById(id);
+		Goods info = goodsService.getById(id);
 
 		// 商品属性
-		Callable<List> goodsAttributeListCallable = () -> goodsAttributeService.queryByGid(id);
+		Callable<List> goodsAttributeListCallable = () -> goodsAttributeService.list(new LambdaQueryWrapper<GoodsAttribute>().eq(GoodsAttribute::getGoodsId, id));
 
 		// 商品规格 返回的是定制的GoodsSpecificationVo
 		Callable<Object> objectCallable = () -> goodsSpecificationService.getSpecificationVoList(id);
@@ -104,59 +106,59 @@ public class WxGoodsController {
 		Callable<List> productListCallable = () -> productService.queryByGid(id);
 
 		// 商品问题，这里是一些通用问题
-		Callable<List> issueCallable = () -> goodsIssueService.querySelective("", 1, 4, "", "");
+		Callable<List> issueCallable = () -> goodsIssueService.querySelective("", 1, 4, "", "").getRecords();
 
 		// 商品品牌商
-		Callable<LitemallBrand> brandCallable = ()->{
+		Callable<Brand> brandCallable = ()->{
 			Integer brandId = info.getBrandId();
-			LitemallBrand brand;
+			Brand brand;
 			if (brandId == 0) {
-				brand = new LitemallBrand();
+				brand = new Brand();
 			} else {
-				brand = brandService.findById(info.getBrandId());
+				brand = brandService.getById(info.getBrandId());
 			}
 			return brand;
 		};
 
 		// 评论
 		Callable<Map> commentsCallable = () -> {
-			List<LitemallComment> comments = commentService.queryGoodsByGid(id, 0, 2);
-			List<Map<String, Object>> commentsVo = new ArrayList<>(comments.size());
-			long commentCount = PageInfo.of(comments).getTotal();
-			for (LitemallComment comment : comments) {
+			IPage<Comment> commentIPage = commentService.queryGoodsByGid(id, 0, 2);
+			List<Map<String, Object>> commentsVo = new ArrayList<>(commentIPage.getRecords().size());
+			for (Comment comment : commentIPage.getRecords()) {
 				Map<String, Object> c = new HashMap<>();
 				c.put("id", comment.getId());
 				c.put("addTime", comment.getAddTime());
 				c.put("content", comment.getContent());
 				c.put("adminContent", comment.getAdminContent());
-				LitemallUser user = userService.findById(comment.getUserId());
+				User user = userService.getById(comment.getUserId());
 				c.put("nickname", user == null ? "" : user.getNickname());
 				c.put("avatar", user == null ? "" : user.getAvatar());
 				c.put("picList", comment.getPicUrls());
 				commentsVo.add(c);
 			}
 			Map<String, Object> commentList = new HashMap<>();
-			commentList.put("count", commentCount);
+			commentList.put("count", commentIPage.getTotal());
 			commentList.put("data", commentsVo);
 			return commentList;
 		};
 
 		//团购信息
-		Callable<List> grouponRulesCallable = () ->rulesService.queryByGoodsId(id);
+		Callable<List> grouponRulesCallable = () ->rulesService.list(new LambdaQueryWrapper<GrouponRules>().eq(GrouponRules::getGoodsId, id));
 
 		// 用户收藏
 		int userHasCollect = 0;
 		if (userId != null) {
-			userHasCollect = collectService.count(userId, id);
+			userHasCollect = collectService.count(new LambdaQueryWrapper<Collect>().eq(Collect::getUserId, userId)
+					.eq(Collect::getValueId, id));
 		}
 
 		// 记录用户的足迹 异步处理
 		if (userId != null) {
 			executorService.execute(()->{
-				LitemallFootprint footprint = new LitemallFootprint();
+				Footprint footprint = new Footprint();
 				footprint.setUserId(userId);
 				footprint.setGoodsId(id);
-				footprintService.add(footprint);
+				footprintService.save(footprint);
 			});
 		}
 		FutureTask<List> goodsAttributeListTask = new FutureTask<>(goodsAttributeListCallable);
@@ -164,7 +166,7 @@ public class WxGoodsController {
 		FutureTask<List> productListCallableTask = new FutureTask<>(productListCallable);
 		FutureTask<List> issueCallableTask = new FutureTask<>(issueCallable);
 		FutureTask<Map> commentsCallableTsk = new FutureTask<>(commentsCallable);
-		FutureTask<LitemallBrand> brandCallableTask = new FutureTask<>(brandCallable);
+		FutureTask<Brand> brandCallableTask = new FutureTask<>(brandCallable);
         FutureTask<List> grouponRulesCallableTask = new FutureTask<>(grouponRulesCallable);
 
 		executorService.submit(goodsAttributeListTask);
@@ -208,16 +210,16 @@ public class WxGoodsController {
 	 */
 	@GetMapping("category")
 	public Object category(@NotNull Integer id) {
-		LitemallCategory cur = categoryService.findById(id);
-		LitemallCategory parent = null;
-		List<LitemallCategory> children = null;
+		Category cur = categoryService.getById(id);
+		Category parent = null;
+		List<Category> children = null;
 
 		if (cur.getPid() == 0) {
 			parent = cur;
 			children = categoryService.queryByPid(cur.getId());
 			cur = children.size() > 0 ? children.get(0) : cur;
 		} else {
-			parent = categoryService.findById(cur.getPid());
+			parent = categoryService.getById(cur.getPid());
 			children = categoryService.queryByPid(cur.getPid());
 		}
 		Map<String, Object> data = new HashMap<>();
@@ -260,7 +262,7 @@ public class WxGoodsController {
 
 		//添加到搜索历史
 		if (userId != null && !StringUtils.isNullOrEmpty(keyword)) {
-			LitemallSearchHistory searchHistoryVo = new LitemallSearchHistory();
+			SearchHistory searchHistoryVo = new SearchHistory();
 			searchHistoryVo.setKeyword(keyword);
 			searchHistoryVo.setUserId(userId);
 			searchHistoryVo.setFrom("wx");
@@ -268,25 +270,29 @@ public class WxGoodsController {
 		}
 
 		//查询列表数据
-		List<LitemallGoods> goodsList = goodsService.querySelective(categoryId, brandId, keyword, isHot, isNew, page, limit, sort, order);
+		IPage<Goods> goodsIPage = goodsService.querySelective(categoryId, brandId, keyword, isHot, isNew, page, limit, sort, order);
 
 		// 查询商品所属类目列表。
-		List<Integer> goodsCatIds = goodsService.getCatIds(brandId, keyword, isHot, isNew);
-		List<LitemallCategory> categoryList = null;
+		List<Integer> goodsCatIds = goodsService.list(new LambdaQueryWrapper<Goods>()
+				.eq(!org.springframework.util.StringUtils.isEmpty(brandId), Goods::getBrandId, brandId)
+				.eq(!org.springframework.util.StringUtils.isEmpty(isNew), Goods::getIsNew, isNew)
+				.eq(!org.springframework.util.StringUtils.isEmpty(isHot), Goods::getIsHot, isHot)
+				.like(!org.springframework.util.StringUtils.isEmpty(keyword), Goods::getKeywords, keyword).or().like(!org.springframework.util.StringUtils.isEmpty(keyword), Goods::getName, keyword)
+				.eq(Goods::getIsOnSale, true)).stream().map(Goods::getCategoryId).collect(Collectors.toList());
+		List<Category> categoryList = null;
 		if (goodsCatIds.size() != 0) {
 			categoryList = categoryService.queryL2ByIds(goodsCatIds);
 		} else {
 			categoryList = new ArrayList<>(0);
 		}
 
-		PageInfo<LitemallGoods> pagedList = PageInfo.of(goodsList);
 
 		Map<String, Object> entity = new HashMap<>();
-		entity.put("list", goodsList);
-		entity.put("total", pagedList.getTotal());
-		entity.put("page", pagedList.getPageNum());
-		entity.put("limit", pagedList.getPageSize());
-		entity.put("pages", pagedList.getPages());
+		entity.put("list", goodsIPage.getRecords());
+		entity.put("total", goodsIPage.getTotal());
+		entity.put("page", goodsIPage.getCurrent());
+		entity.put("limit", goodsIPage.getSize());
+		entity.put("pages", goodsIPage.getPages());
 		entity.put("filterCategoryList", categoryList);
 
 		// 因为这里需要返回额外的filterCategoryList参数，因此不能方便使用ResponseUtil.okList
@@ -301,7 +307,7 @@ public class WxGoodsController {
 	 */
 	@GetMapping("related")
 	public Object related(@NotNull Integer id) {
-		LitemallGoods goods = goodsService.findById(id);
+		Goods goods = goodsService.getById(id);
 		if (goods == null) {
 			return ResponseUtil.badArgumentValue();
 		}
@@ -311,8 +317,8 @@ public class WxGoodsController {
 
 		// 查找六个相关商品
 		int related = 6;
-		List<LitemallGoods> goodsList = goodsService.queryByCategory(cid, 0, related);
-		return ResponseUtil.okList(goodsList);
+		IPage<Goods> goodsList = goodsService.queryByCategory(cid, 0, related);
+		return ResponseUtil.okPageList(goodsList);
 	}
 
 	/**
@@ -322,7 +328,7 @@ public class WxGoodsController {
 	 */
 	@GetMapping("count")
 	public Object count() {
-		Integer goodsCount = goodsService.queryOnSale();
+		Integer goodsCount = goodsService.count(new LambdaQueryWrapper<Goods>().eq(Goods::getIsOnSale, true));
 		return ResponseUtil.ok(goodsCount);
 	}
 

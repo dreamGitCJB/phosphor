@@ -28,6 +28,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-miniapp</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
@@ -71,15 +76,12 @@
 
         <dependency>
             <groupId>com.github.binarywang</groupId>
-            <artifactId>weixin-java-miniapp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.binarywang</groupId>
             <artifactId>weixin-java-pay</artifactId>
         </dependency>
         <dependency>
             <groupId>org.linlinjava</groupId>
-            <artifactId>litemall-db</artifactId>
+            <artifactId>litemall-date</artifactId>
+            <version>0.1.0</version>
         </dependency>
     </dependencies>
 

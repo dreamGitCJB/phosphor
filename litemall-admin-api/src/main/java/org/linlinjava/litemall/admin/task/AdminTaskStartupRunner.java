@@ -1,9 +1,10 @@
 package org.linlinjava.litemall.admin.task;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.linlinjava.litemall.core.task.TaskService;
-import org.linlinjava.litemall.db.domain.LitemallGrouponRules;
-import org.linlinjava.litemall.db.service.LitemallGrouponRulesService;
-import org.linlinjava.litemall.db.util.GrouponConstant;
+import org.linlinjava.litemall.db.common.constans.GrouponConstant;
+import org.linlinjava.litemall.db.entity.GrouponRules;
+import org.linlinjava.litemall.db.service.IGrouponRulesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -17,14 +18,14 @@ import java.util.List;
 public class AdminTaskStartupRunner implements ApplicationRunner {
 
     @Autowired
-    private LitemallGrouponRulesService rulesService;
+    private IGrouponRulesService rulesService;
     @Autowired
     private TaskService taskService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        List<LitemallGrouponRules> grouponRulesList = rulesService.queryByStatus(GrouponConstant.RULE_STATUS_ON);
-        for(LitemallGrouponRules grouponRules : grouponRulesList){
+        List<GrouponRules> grouponRulesList = rulesService.list(new LambdaQueryWrapper<GrouponRules>().eq(GrouponRules::getStatus, GrouponConstant.RULE_STATUS_ON));
+        for(GrouponRules grouponRules : grouponRulesList){
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime expire =  grouponRules.getExpireTime();
             if(expire.isBefore(now)) {

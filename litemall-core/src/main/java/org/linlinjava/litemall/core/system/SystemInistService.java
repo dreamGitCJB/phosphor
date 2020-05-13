@@ -1,7 +1,8 @@
 package org.linlinjava.litemall.core.system;
 
 import org.linlinjava.litemall.core.util.SystemInfoPrinter;
-import org.linlinjava.litemall.db.service.LitemallSystemConfigService;
+import org.linlinjava.litemall.db.entity.System;
+import org.linlinjava.litemall.db.service.ISystemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 系统启动服务，用于设置系统配置信息、检查系统状态及打印系统信息
@@ -58,11 +60,11 @@ class SystemInistService {
     }
 
     @Autowired
-    private LitemallSystemConfigService litemallSystemConfigService;
+    private ISystemService systemService;
 
     private void initConfigs() {
         // 1. 读取数据库全部配置信息
-        Map<String, String> configs = litemallSystemConfigService.queryAll();
+        Map<String, String> configs = systemService.list().stream().collect(Collectors.toMap(o-> o.getKeyName(), o -> o.getKeyValue()));
 
         // 2. 分析DEFAULT_CONFIGS
         for (Map.Entry<String, String> entry : DEFAULT_CONFIGS.entrySet()) {
@@ -71,7 +73,8 @@ class SystemInistService {
             }
 
             configs.put(entry.getKey(), entry.getValue());
-            litemallSystemConfigService.addConfig(entry.getKey(), entry.getValue());
+            System system = new System().setKeyName(entry.getKey()).setKeyValue(entry.getValue());
+            systemService.save(system);
         }
 
         SystemConfig.setConfigs(configs);

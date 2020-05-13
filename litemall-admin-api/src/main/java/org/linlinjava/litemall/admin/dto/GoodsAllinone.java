@@ -1,45 +1,45 @@
 package org.linlinjava.litemall.admin.dto;
 
-import org.linlinjava.litemall.db.domain.LitemallGoods;
-import org.linlinjava.litemall.db.domain.LitemallGoodsAttribute;
-import org.linlinjava.litemall.db.domain.LitemallGoodsProduct;
-import org.linlinjava.litemall.db.domain.LitemallGoodsSpecification;
+import org.linlinjava.litemall.db.entity.Goods;
+import org.linlinjava.litemall.db.entity.GoodsAttribute;
+import org.linlinjava.litemall.db.entity.GoodsProduct;
+import org.linlinjava.litemall.db.entity.GoodsSpecification;
 
 public class GoodsAllinone {
-    LitemallGoods goods;
-    LitemallGoodsSpecification[] specifications;
-    LitemallGoodsAttribute[] attributes;
-    LitemallGoodsProduct[] products;
+    Goods goods;
+    GoodsSpecification[] specifications;
+    GoodsAttribute[] attributes;
+    GoodsProduct[] products;
 
-    public LitemallGoods getGoods() {
+    public Goods getGoods() {
         return goods;
     }
 
-    public void setGoods(LitemallGoods goods) {
+    public void setGoods(Goods goods) {
         this.goods = goods;
     }
 
-    public LitemallGoodsProduct[] getProducts() {
+    public GoodsProduct[] getProducts() {
         return products;
     }
 
-    public void setProducts(LitemallGoodsProduct[] products) {
+    public void setProducts(GoodsProduct[] products) {
         this.products = products;
     }
 
-    public LitemallGoodsSpecification[] getSpecifications() {
+    public GoodsSpecification[] getSpecifications() {
         return specifications;
     }
 
-    public void setSpecifications(LitemallGoodsSpecification[] specifications) {
+    public void setSpecifications(GoodsSpecification[] specifications) {
         this.specifications = specifications;
     }
 
-    public LitemallGoodsAttribute[] getAttributes() {
+    public GoodsAttribute[] getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(LitemallGoodsAttribute[] attributes) {
+    public void setAttributes(GoodsAttribute[] attributes) {
         this.attributes = attributes;
     }
 

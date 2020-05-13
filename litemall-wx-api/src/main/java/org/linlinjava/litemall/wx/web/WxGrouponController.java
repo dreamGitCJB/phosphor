@@ -1,5 +1,7 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.express.ExpressService;
@@ -7,9 +9,11 @@ import org.linlinjava.litemall.core.express.dao.ExpressInfo;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.*;
+import org.linlinjava.litemall.db.vo.UserVo;
+import org.linlinjava.litemall.db.common.constans.GrouponConstant;
+import org.linlinjava.litemall.db.common.util.OrderUtil;
+import org.linlinjava.litemall.db.entity.*;
 import org.linlinjava.litemall.db.service.*;
-import org.linlinjava.litemall.db.util.OrderUtil;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.service.WxGrouponRuleService;
 import org.linlinjava.litemall.wx.vo.GrouponRuleVo;
@@ -26,7 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.linlinjava.litemall.wx.util.WxResponseCode.*;
+import static org.linlinjava.litemall.wx.util.WxResponseCode.ORDER_INVALID;
+import static org.linlinjava.litemall.wx.util.WxResponseCode.ORDER_UNKNOWN;
 
 /**
  * 团购服务
@@ -40,23 +45,23 @@ public class WxGrouponController {
     private final Log logger = LogFactory.getLog(WxGrouponController.class);
 
     @Autowired
-    private LitemallGrouponRulesService rulesService;
+    private IGrouponRulesService rulesService;
     @Autowired
     private WxGrouponRuleService wxGrouponRuleService;
     @Autowired
-    private LitemallGrouponService grouponService;
+    private IGrouponService grouponService;
     @Autowired
-    private LitemallGoodsService goodsService;
+    private IGoodsService goodsService;
     @Autowired
-    private LitemallOrderService orderService;
+    private IOrderService orderService;
     @Autowired
-    private LitemallOrderGoodsService orderGoodsService;
+    private IOrderGoodsService orderGoodsService;
     @Autowired
-    private LitemallUserService userService;
+    private IUserService userService;
     @Autowired
     private ExpressService expressService;
     @Autowired
-    private LitemallGrouponRulesService grouponRulesService;
+    private IGrouponRulesService grouponRulesService;
 
     /**
      * 团购规则列表
@@ -70,8 +75,8 @@ public class WxGrouponController {
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
-        List<GrouponRuleVo> grouponRuleVoList = wxGrouponRuleService.queryList(page, limit, sort, order);
-        return ResponseUtil.okList(grouponRuleVoList);
+        IPage<GrouponRuleVo> grouponRuleVoList = wxGrouponRuleService.queryList(page, limit, sort, order);
+        return ResponseUtil.okPageList(grouponRuleVoList);
     }
 
     /**
@@ -87,18 +92,20 @@ public class WxGrouponController {
             return ResponseUtil.unlogin();
         }
 
-        LitemallGroupon groupon = grouponService.queryById(userId, grouponId);
+        Groupon groupon = grouponService.getOne(new LambdaQueryWrapper<Groupon>().eq(Groupon::getUserId, userId).eq(Groupon::getId, grouponId));
         if (groupon == null) {
             return ResponseUtil.badArgumentValue();
         }
 
-        LitemallGrouponRules rules = rulesService.findById(groupon.getRulesId());
+        GrouponRules rules = rulesService.getById(groupon.getRulesId());
         if (rules == null) {
             return ResponseUtil.badArgumentValue();
         }
 
         // 订单信息
-        LitemallOrder order = orderService.findById(userId, groupon.getOrderId());
+        org.linlinjava.litemall.db.entity.Order order = orderService.getOne(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Order>().eq(org.linlinjava.litemall.db.entity.Order::getUserId,userId)
+                .eq(org.linlinjava.litemall.db.entity.Order::getId, groupon.getOrderId()));
+
         if (null == order) {
             return ResponseUtil.fail(ORDER_UNKNOWN, "订单不存在");
         }
@@ -120,9 +127,9 @@ public class WxGrouponController {
         orderVo.put("expCode", order.getShipChannel());
         orderVo.put("expNo", order.getShipSn());
 
-        List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
+        List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
         List<Map<String, Object>> orderGoodsVoList = new ArrayList<>(orderGoodsList.size());
-        for (LitemallOrderGoods orderGoods : orderGoodsList) {
+        for (OrderGoods orderGoods : orderGoodsList) {
             Map<String, Object> orderGoodsVo = new HashMap<>();
             orderGoodsVo.put("id", orderGoods.getId());
             orderGoodsVo.put("orderId", orderGoods.getOrderId());
@@ -157,10 +164,10 @@ public class WxGrouponController {
             linkGrouponId = groupon.getGrouponId();
 
         }
-        List<LitemallGroupon> groupons = grouponService.queryJoinRecord(linkGrouponId);
+        List<Groupon> groupons = grouponService.queryJoinRecord(linkGrouponId);
 
         UserVo joiner;
-        for (LitemallGroupon grouponItem : groupons) {
+        for (Groupon grouponItem : groupons) {
             joiner = userService.findUserVoById(grouponItem.getUserId());
             joiners.add(joiner);
         }
@@ -181,17 +188,17 @@ public class WxGrouponController {
      */
     @GetMapping("join")
     public Object join(@NotNull Integer grouponId) {
-        LitemallGroupon groupon = grouponService.queryById(grouponId);
+        Groupon groupon = grouponService.getById(grouponId);
         if (groupon == null) {
             return ResponseUtil.badArgumentValue();
         }
 
-        LitemallGrouponRules rules = rulesService.findById(groupon.getRulesId());
+        GrouponRules rules = rulesService.getById(groupon.getRulesId());
         if (rules == null) {
             return ResponseUtil.badArgumentValue();
         }
 
-        LitemallGoods goods = goodsService.findById(rules.getGoodsId());
+        Goods goods = goodsService.getById(rules.getGoodsId());
         if (goods == null) {
             return ResponseUtil.badArgumentValue();
         }
@@ -216,22 +223,25 @@ public class WxGrouponController {
             return ResponseUtil.unlogin();
         }
 
-        List<LitemallGroupon> myGroupons;
-        if (showType == 0) {
-            myGroupons = grouponService.queryMyGroupon(userId);
-        } else {
-            myGroupons = grouponService.queryMyJoinGroupon(userId);
-        }
+        List<Groupon> myGroupons = grouponService.list(new LambdaQueryWrapper<Groupon>()
+                .eq(Groupon::getUserId, userId)
+                .eq(Groupon::getCreatorUserId, userId)
+                .eq(showType == 0, Groupon::getGrouponId, 0)
+                .eq(Groupon::getStatus, GrouponConstant.STATUS_NONE)
+                .orderByDesc(Groupon::getAddTime));
 
         List<Map<String, Object>> grouponVoList = new ArrayList<>(myGroupons.size());
 
-        LitemallOrder order;
-        LitemallGrouponRules rules;
-        LitemallUser creator;
-        for (LitemallGroupon groupon : myGroupons) {
-            order = orderService.findById(userId, groupon.getOrderId());
-            rules = rulesService.findById(groupon.getRulesId());
-            creator = userService.findById(groupon.getCreatorUserId());
+        org.linlinjava.litemall.db.entity.Order order;
+        GrouponRules rules;
+        User creator;
+        for (Groupon groupon : myGroupons) {
+            order = orderService.getOne(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Order>()
+                    .eq(org.linlinjava.litemall.db.entity.Order::getId, groupon.getOrderId())
+                    .eq(org.linlinjava.litemall.db.entity.Order::getUserId, userId));
+
+            rules = rulesService.getById(groupon.getRulesId());
+            creator = userService.getById(groupon.getCreatorUserId());
 
             Map<String, Object> grouponVo = new HashMap<>();
             //填充团购信息
@@ -249,7 +259,10 @@ public class WxGrouponController {
                 linkGrouponId = groupon.getGrouponId();
                 grouponVo.put("isCreator", false);
             }
-            int joinerCount = grouponService.countGroupon(linkGrouponId);
+
+            int joinerCount = grouponService.count(new LambdaQueryWrapper<Groupon>()
+                    .eq(Groupon::getGrouponId, linkGrouponId)
+                    .eq(Groupon::getStatus, GrouponConstant.STATUS_NONE));
             grouponVo.put("joinerCount", joinerCount + 1);
 
             //填充订单信息
@@ -258,9 +271,9 @@ public class WxGrouponController {
             grouponVo.put("actualPrice", order.getActualPrice());
             grouponVo.put("orderStatusText", OrderUtil.orderStatusText(order));
 
-            List<LitemallOrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
+            List<OrderGoods> orderGoodsList = orderGoodsService.queryByOid(order.getId());
             List<Map<String, Object>> orderGoodsVoList = new ArrayList<>(orderGoodsList.size());
-            for (LitemallOrderGoods orderGoods : orderGoodsList) {
+            for (OrderGoods orderGoods : orderGoodsList) {
                 Map<String, Object> orderGoodsVo = new HashMap<>();
                 orderGoodsVo.put("id", orderGoods.getId());
                 orderGoodsVo.put("goodsName", orderGoods.getGoodsName());

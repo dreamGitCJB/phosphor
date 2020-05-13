@@ -1,12 +1,13 @@
 package org.linlinjava.litemall.wx.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.storage.StorageService;
 import org.linlinjava.litemall.core.util.CharUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
-import org.linlinjava.litemall.db.domain.LitemallStorage;
-import org.linlinjava.litemall.db.service.LitemallStorageService;
+import org.linlinjava.litemall.db.entity.Storage;
+import org.linlinjava.litemall.db.service.IStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -15,10 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
 
 /**
  * 对象存储服务
@@ -32,20 +31,22 @@ public class WxStorageController {
     @Autowired
     private StorageService storageService;
     @Autowired
-    private LitemallStorageService litemallStorageService;
+    private IStorageService mStorageService;
 
     private String generateKey(String originalFilename) {
         int index = originalFilename.lastIndexOf('.');
         String suffix = originalFilename.substring(index);
 
         String key = null;
-        LitemallStorage storageInfo = null;
+        Integer count = 0;
+
+
 
         do {
             key = CharUtil.getRandomString(20) + suffix;
-            storageInfo = litemallStorageService.findByKey(key);
+            count = mStorageService.count(new LambdaQueryWrapper<Storage>().eq(Storage::getKey, key));
         }
-        while (storageInfo != null);
+        while (count != 0);
 
         return key;
     }
@@ -53,7 +54,7 @@ public class WxStorageController {
     @PostMapping("/upload")
     public Object upload(@RequestParam("file") MultipartFile file) throws IOException {
         String originalFilename = file.getOriginalFilename();
-        LitemallStorage litemallStorage = storageService.store(file.getInputStream(), file.getSize(), file.getContentType(), originalFilename);
+        Storage litemallStorage = storageService.store(file.getInputStream(), file.getSize(), file.getContentType(), originalFilename);
         return ResponseUtil.ok(litemallStorage);
     }
 
@@ -65,7 +66,7 @@ public class WxStorageController {
      */
     @GetMapping("/fetch/{key:.+}")
     public ResponseEntity<Resource> fetch(@PathVariable String key) {
-        LitemallStorage litemallStorage = litemallStorageService.findByKey(key);
+        Storage litemallStorage = mStorageService.getOne(new LambdaQueryWrapper<Storage>().eq(Storage::getKey, key));
         if (key == null) {
             return ResponseEntity.notFound().build();
         }
@@ -90,7 +91,7 @@ public class WxStorageController {
      */
     @GetMapping("/download/{key:.+}")
     public ResponseEntity<Resource> download(@PathVariable String key) {
-        LitemallStorage litemallStorage = litemallStorageService.findByKey(key);
+        Storage litemallStorage = mStorageService.getOne(new LambdaQueryWrapper<Storage>().eq(Storage::getKey, key));
         if (key == null) {
             return ResponseEntity.notFound().build();
         }

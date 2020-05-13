@@ -1,5 +1,8 @@
 package org.linlinjava.litemall.admin.web;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -12,12 +15,12 @@ import org.linlinjava.litemall.core.util.JacksonUtil;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.domain.LitemallAdmin;
-import org.linlinjava.litemall.db.domain.LitemallPermission;
-import org.linlinjava.litemall.db.domain.LitemallRole;
-import org.linlinjava.litemall.db.service.LitemallAdminService;
-import org.linlinjava.litemall.db.service.LitemallPermissionService;
-import org.linlinjava.litemall.db.service.LitemallRoleService;
+import org.linlinjava.litemall.db.common.util.PageUtil;
+import org.linlinjava.litemall.db.entity.Admin;
+import org.linlinjava.litemall.db.entity.Role;
+import org.linlinjava.litemall.db.service.IAdminService;
+import org.linlinjava.litemall.db.service.IPermissionService;
+import org.linlinjava.litemall.db.service.IRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.linlinjava.litemall.admin.util.AdminResponseCode.ROLE_NAME_EXIST;
 import static org.linlinjava.litemall.admin.util.AdminResponseCode.ROLE_USER_EXIST;
@@ -37,11 +41,11 @@ public class AdminRoleController {
     private final Log logger = LogFactory.getLog(AdminRoleController.class);
 
     @Autowired
-    private LitemallRoleService roleService;
+    private IRoleService roleService;
     @Autowired
-    private LitemallPermissionService permissionService;
+    private IPermissionService permissionService;
     @Autowired
-    private LitemallAdminService adminService;
+    private IAdminService adminService;
 
     @RequiresPermissions("admin:role:list")
     @RequiresPermissionsDesc(menu = {"系统管理", "角色管理"}, button = "角色查询")
@@ -51,16 +55,22 @@ public class AdminRoleController {
                        @RequestParam(defaultValue = "10") Integer limit,
                        @Sort @RequestParam(defaultValue = "add_time") String sort,
                        @Order @RequestParam(defaultValue = "desc") String order) {
-        List<LitemallRole> roleList = roleService.querySelective(name, page, limit, sort, order);
-        return ResponseUtil.okList(roleList);
+
+        Page pageData = new Page(page, limit);
+        PageUtil.pagetoPage(pageData, sort, order);
+
+
+        IPage<Role> roleList = roleService.page(pageData,new LambdaQueryWrapper<Role>()
+                .like(!StringUtils.isEmpty(name), Role::getName, name));
+        return ResponseUtil.okPageList(roleList);
     }
 
     @GetMapping("/options")
     public Object options() {
-        List<LitemallRole> roleList = roleService.queryAll();
+        List<Role> roleList = roleService.list();
 
         List<Map<String, Object>> options = new ArrayList<>(roleList.size());
-        for (LitemallRole role : roleList) {
+        for (Role role : roleList) {
             Map<String, Object> option = new HashMap<>(2);
             option.put("value", role.getId());
             option.put("label", role.getName());
@@ -74,12 +84,12 @@ public class AdminRoleController {
     @RequiresPermissionsDesc(menu = {"系统管理", "角色管理"}, button = "角色详情")
     @GetMapping("/read")
     public Object read(@NotNull Integer id) {
-        LitemallRole role = roleService.findById(id);
+        Role role = roleService.getById(id);
         return ResponseUtil.ok(role);
     }
 
 
-    private Object validate(LitemallRole role) {
+    private Object validate(Role role) {
         String name = role.getName();
         if (StringUtils.isEmpty(name)) {
             return ResponseUtil.badArgument();
@@ -91,17 +101,19 @@ public class AdminRoleController {
     @RequiresPermissions("admin:role:create")
     @RequiresPermissionsDesc(menu = {"系统管理", "角色管理"}, button = "角色添加")
     @PostMapping("/create")
-    public Object create(@RequestBody LitemallRole role) {
+    public Object create(@RequestBody Role role) {
         Object error = validate(role);
         if (error != null) {
             return error;
         }
 
-        if (roleService.checkExist(role.getName())) {
+        int count = roleService.count(new LambdaQueryWrapper<Role>().eq(Role::getName, role.getName()));
+
+        if (count > 0) {
             return ResponseUtil.fail(ROLE_NAME_EXIST, "角色已经存在");
         }
 
-        roleService.add(role);
+        roleService.save(role);
 
         return ResponseUtil.ok(role);
     }
@@ -109,7 +121,7 @@ public class AdminRoleController {
     @RequiresPermissions("admin:role:update")
     @RequiresPermissionsDesc(menu = {"系统管理", "角色管理"}, button = "角色编辑")
     @PostMapping("/update")
-    public Object update(@RequestBody LitemallRole role) {
+    public Object update(@RequestBody Role role) {
         Object error = validate(role);
         if (error != null) {
             return error;
@@ -122,15 +134,15 @@ public class AdminRoleController {
     @RequiresPermissions("admin:role:delete")
     @RequiresPermissionsDesc(menu = {"系统管理", "角色管理"}, button = "角色删除")
     @PostMapping("/delete")
-    public Object delete(@RequestBody LitemallRole role) {
+    public Object delete(@RequestBody Role role) {
         Integer id = role.getId();
         if (id == null) {
             return ResponseUtil.badArgument();
         }
 
         // 如果当前角色所对应管理员仍存在，则拒绝删除角色。
-        List<LitemallAdmin> adminList = adminService.all();
-        for (LitemallAdmin admin : adminList) {
+        List<Admin> adminList = adminService.list();
+        for (Admin admin : adminList) {
             Integer[] roleIds = admin.getRoleIds();
             for (Integer roleId : roleIds) {
                 if (id.equals(roleId)) {
@@ -139,7 +151,7 @@ public class AdminRoleController {
             }
         }
 
-        roleService.deleteById(id);
+        roleService.removeById(id);
         return ResponseUtil.ok();
     }
 
@@ -162,12 +174,20 @@ public class AdminRoleController {
     private Set<String> getAssignedPermissions(Integer roleId) {
         // 这里需要注意的是，如果存在超级权限*，那么这里需要转化成当前所有系统权限。
         // 之所以这么做，是因为前端不能识别超级权限，所以这里需要转换一下。
-        Set<String> assignedPermissions = null;
-        if (permissionService.checkSuperPermission(roleId)) {
+        Set<String> assignedPermissions;
+
+        int count = permissionService.count(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Permission>()
+                .eq(org.linlinjava.litemall.db.entity.Permission::getRoleId, roleId)
+                .eq(org.linlinjava.litemall.db.entity.Permission::getPermission, "*"));
+
+        if (roleId != null && count > 0) {
             getSystemPermissions();
             assignedPermissions = systemPermissionsString;
         } else {
-            assignedPermissions = permissionService.queryByRoleId(roleId);
+            assignedPermissions = permissionService.list(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Permission>()
+                    .in(org.linlinjava.litemall.db.entity.Permission::getRoleId, roleId)).stream()
+                    .map(org.linlinjava.litemall.db.entity.Permission::getPermission)
+                    .collect(Collectors.toSet());
         }
 
         return assignedPermissions;
@@ -209,17 +229,28 @@ public class AdminRoleController {
         }
 
         // 如果修改的角色是超级权限，则拒绝修改。
-        if (permissionService.checkSuperPermission(roleId)) {
+
+        if(roleId == null){
+            return false;
+        }
+
+
+        int count = permissionService.count(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Permission>()
+                .eq(org.linlinjava.litemall.db.entity.Permission::getRoleId, roleId)
+                .eq(org.linlinjava.litemall.db.entity.Permission::getPermission, "*"));
+
+        if (count > 0) {
             return ResponseUtil.fail(AdminResponseCode.ROLE_SUPER_SUPERMISSION, "当前角色的超级权限不能变更");
         }
 
         // 先删除旧的权限，再更新新的权限
-        permissionService.deleteByRoleId(roleId);
+        permissionService.remove(new LambdaQueryWrapper<org.linlinjava.litemall.db.entity.Permission>()
+                .eq(org.linlinjava.litemall.db.entity.Permission::getRoleId, roleId));
         for (String permission : permissions) {
-            LitemallPermission litemallPermission = new LitemallPermission();
+            org.linlinjava.litemall.db.entity.Permission litemallPermission = new org.linlinjava.litemall.db.entity.Permission();
             litemallPermission.setRoleId(roleId);
             litemallPermission.setPermission(permission);
-            permissionService.add(litemallPermission);
+            permissionService.save(litemallPermission);
         }
         return ResponseUtil.ok();
     }
