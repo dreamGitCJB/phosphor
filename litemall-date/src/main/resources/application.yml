@@ -1,0 +1,16 @@
+spring:
+  profiles:
+    active: db
+  messages:
+    encoding: UTF-8
+
+logging:
+  level:
+    root:  DEBUG
+    org.springframework:  DEBUG
+    org.mybatis: debug
+    org.linlinjava.litemall.db.mapper:  debug
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
