@@ -1,6 +1,5 @@
 package org.linlinjava.litemall.core.qcode;
 
-import me.chanjar.weixin.common.error.WxErrorException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.storage.StorageService;

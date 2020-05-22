@@ -21,11 +21,8 @@
 
     <modules>
         <module>litemall-core</module>
-        <module>litemall-db</module>
         <module>litemall-wx-api</module>
         <module>litemall-admin-api</module>
-        <module>litemall-all</module>
-        <module>litemall-all-war</module>
         <module>litemall-date</module>
     </modules>
 
@@ -36,11 +33,7 @@
                 <artifactId>litemall-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.linlinjava</groupId>
-                <artifactId>litemall-db</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>org.linlinjava</groupId>
                 <artifactId>litemall-wx-api</artifactId>
@@ -49,11 +42,6 @@
             <dependency>
                 <groupId>org.linlinjava</groupId>
                 <artifactId>litemall-admin-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.linlinjava</groupId>
-                <artifactId>litemall-all</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

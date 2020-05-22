@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication(scanBasePackages = {"org.linlinjava.litemall.db", "org.linlinjava.litemall.core", "org" +
         ".linlinjava.litemall.admin"})
-@MapperScan("org.linlinjava.litemall.db.dao")
+@MapperScan("org.linlinjava.litemall.db.mapper")
 @EnableTransactionManagement
 @EnableScheduling
 public class Application {

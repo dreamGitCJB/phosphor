@@ -11,6 +11,7 @@ import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.linlinjava.litemall.db.common.handler.JsonStringArrayTypeHandler;
 
 /**
  * <p>
@@ -69,7 +70,7 @@ public class OrderGoods implements Serializable {
     /**
      * 商品货品的规格列表
      */
-    @TableField(el = "specifications typeHandler = JsonStringArrayTypeHandler.class")
+    @TableField(typeHandler = JsonStringArrayTypeHandler.class)
     private String[] specifications;
 
     /**

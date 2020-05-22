@@ -9,6 +9,7 @@ import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.linlinjava.litemall.db.common.handler.JsonStringArrayTypeHandler;
 
 /**
  * <p>
@@ -73,7 +74,7 @@ public class Admin implements Serializable {
      * 角色列表
      */
 
-    @TableField(el = "roleIds typeHandler = JsonStringArrayTypeHandler.class")
+    @TableField(typeHandler = JsonStringArrayTypeHandler.class)
     private Integer[] roleIds;
 
 

@@ -11,6 +11,7 @@ import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.linlinjava.litemall.db.common.handler.JsonIntegerArrayTypeHandler;
 
 /**
  * <p>
@@ -69,7 +70,7 @@ public class Topic implements Serializable {
     /**
      * 专题相关商品，采用JSON数组格式
      */
-    @TableField(el = "goods typeHandler = JsonIntegerArrayTypeHandler.class")
+    @TableField(typeHandler = JsonIntegerArrayTypeHandler.class)
     private Integer[] goods;
 
     /**

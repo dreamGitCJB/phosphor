@@ -29,11 +29,11 @@
             <!--<optional>true</optional>-->
         </dependency>
 
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus</artifactId>
-            <version>3.3.1</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.baomidou</groupId>-->
+<!--            <artifactId>mybatis-plus</artifactId>-->
+<!--            <version>3.3.1</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.mybatis.generator</groupId>
@@ -53,7 +53,7 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-extension</artifactId>
-            <version>3.0.6</version>
+            <version>3.3.1</version>
         </dependency>
 
         <dependency>
@@ -70,7 +70,7 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-generator</artifactId>
-            <version>3.0.6</version>
+            <version>3.3.1</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->

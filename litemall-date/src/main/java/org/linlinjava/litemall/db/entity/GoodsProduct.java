@@ -40,7 +40,7 @@ public class GoodsProduct implements Serializable {
     /**
      * 商品规格值列表，采用JSON数组格式
      */
-    @TableField(el = "specifications typeHandler = JsonStringArrayTypeHandler.class")
+    @TableField(typeHandler = JsonStringArrayTypeHandler.class)
     private String[] specifications;
 
     /**
