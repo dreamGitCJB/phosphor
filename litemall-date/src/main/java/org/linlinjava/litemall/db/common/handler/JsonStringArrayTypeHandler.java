@@ -3,6 +3,8 @@ package org.linlinjava.litemall.db.common.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.apache.ibatis.type.MappedTypes;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -12,6 +14,8 @@ import java.sql.SQLException;
 /*
    <columnOverride column="urls" javaType="java.lang.String[]" typeHandler="JsonStringArrayTypeHandler"/>
  */
+@MappedTypes({String[].class})
+@MappedJdbcTypes({JdbcType.VARCHAR})
 public class JsonStringArrayTypeHandler extends BaseTypeHandler<String[]> {
     private static final ObjectMapper mapper = new ObjectMapper();
 

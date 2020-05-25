@@ -3,15 +3,21 @@ package org.linlinjava.litemall.db.common.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.apache.ibatis.type.MappedTypes;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/*
+/**
+ * @author chenjinbao
+ */ /*
    <columnOverride column="ids" javaType="java.lang.Integer[]" typeHandler="JsonIntegerArrayTypeHandler"/>
  */
+@MappedTypes({Integer[].class})
+@MappedJdbcTypes(value = {JdbcType.VARCHAR})
 public class JsonIntegerArrayTypeHandler extends BaseTypeHandler<Integer[]> {
     private static final ObjectMapper mapper = new ObjectMapper();
 

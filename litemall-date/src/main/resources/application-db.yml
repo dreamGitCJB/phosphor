@@ -43,3 +43,4 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
+  type-handlers-package: org.linlinjava.litemall.db.common.handler
