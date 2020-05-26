@@ -21,12 +21,11 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_system")
-public class System implements Serializable {
+public class System extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 系统配置名
@@ -38,20 +37,7 @@ public class System implements Serializable {
      */
     private String keyValue;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
 
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

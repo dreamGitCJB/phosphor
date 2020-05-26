@@ -17,7 +17,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -97,6 +101,8 @@ public class WxHomeController {
             couponListCallable = () -> couponService.queryAvailableList(userId,0, 3);
         }
 
+		ServletRequestAttributes sra = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+		RequestContextHolder.setRequestAttributes(sra, true);
 
         Callable<List> newGoodsListCallable = () -> goodsService.list(new LambdaQueryWrapper<Goods>().eq(Goods::getIsNew,true).eq(Goods::getIsOnSale, true).orderByDesc(Goods::getAddTime)).stream().limit(SystemConfig.getNewLimit()).collect(Collectors.toList());
 
@@ -104,7 +110,7 @@ public class WxHomeController {
 
         Callable<List> brandListCallable = () -> brandService.query(0, SystemConfig.getBrandLimit(), null, null).getRecords();
 
-        Callable<List> topicListCallable = () -> topicService.queryList(0, SystemConfig.getTopicLimit(),"desc","add_time").getRecords();
+        Callable<List> topicListCallable = () -> topicService.queryList(0, SystemConfig.getTopicLimit(),"add_time","desc").getRecords();
 
         //团购专区
         Callable<List> grouponListCallable = () -> grouponService.queryList(0, 5).getRecords();

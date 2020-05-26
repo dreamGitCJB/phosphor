@@ -24,8 +24,8 @@ public class Region implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+	@TableId(value = "id", type = IdType.AUTO)
+	private Integer id;
 
     /**
      * 行政区域父ID，例如区县的pid指向市，市的pid指向省，省的pid则是0

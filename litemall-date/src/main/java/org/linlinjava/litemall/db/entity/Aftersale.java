@@ -22,12 +22,11 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_aftersale")
-public class Aftersale implements Serializable {
+public class Aftersale extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 售后编号
@@ -79,20 +78,6 @@ public class Aftersale implements Serializable {
      */
     private LocalDateTime handleTime;
 
-    /**
-     * 添加时间
-     */
-    private LocalDateTime addTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 售后编号
-     */
-    private Boolean deleted;
 
 
 }

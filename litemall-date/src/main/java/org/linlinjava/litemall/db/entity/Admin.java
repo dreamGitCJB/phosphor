@@ -23,12 +23,11 @@ import org.linlinjava.litemall.db.common.handler.JsonStringArrayTypeHandler;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_admin")
-public class Admin implements Serializable {
+public class Admin extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 管理员名称
@@ -55,20 +54,6 @@ public class Admin implements Serializable {
      */
     private String avatar;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
     /**
      * 角色列表

@@ -21,12 +21,11 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_notice_admin")
-public class NoticeAdmin implements Serializable {
+public class NoticeAdmin extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 通知ID
@@ -48,20 +47,7 @@ public class NoticeAdmin implements Serializable {
      */
     private LocalDateTime readTime;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
 
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

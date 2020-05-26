@@ -24,12 +24,11 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_brand")
-public class Brand implements Serializable {
+public class Brand extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 品牌商名称
@@ -53,21 +52,5 @@ public class Brand implements Serializable {
      * 品牌商的商品低价，仅用于页面展示
      */
     private BigDecimal floorPrice;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
-
 
 }

@@ -21,12 +21,9 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_comment")
-public class Comment implements Serializable {
+public class Comment extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
 
     /**
      * 如果type=0，则是商品评论；如果是type=1，则是专题评论。
@@ -68,20 +65,6 @@ public class Comment implements Serializable {
      */
     private Integer star;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

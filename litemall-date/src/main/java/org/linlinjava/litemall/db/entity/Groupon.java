@@ -21,12 +21,9 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_groupon")
-public class Groupon implements Serializable {
+public class Groupon extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
 
     /**
      * 关联的订单ID
@@ -68,20 +65,7 @@ public class Groupon implements Serializable {
      */
     private Integer status;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
 
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

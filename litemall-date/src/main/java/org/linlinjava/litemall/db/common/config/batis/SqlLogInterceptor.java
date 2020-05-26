@@ -1,4 +1,4 @@
-package org.linlinjava.litemall.db.common.config;
+package org.linlinjava.litemall.db.common.config.batis;
 
 
 import lombok.extern.slf4j.Slf4j;

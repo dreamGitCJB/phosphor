@@ -1,4 +1,4 @@
-package org.linlinjava.litemall.db.common.config;
+package org.linlinjava.litemall.db.common.config.rest;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;

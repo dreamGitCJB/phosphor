@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -95,6 +97,9 @@ public class WxGoodsController {
 	public Object detail(@LoginUser Integer userId, @NotNull Integer id) {
 		// 商品信息
 		Goods info = goodsService.getById(id);
+
+		ServletRequestAttributes sra = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		RequestContextHolder.setRequestAttributes(sra, true);
 
 		// 商品属性
 		Callable<List> goodsAttributeListCallable = () -> goodsAttributeService.list(new LambdaQueryWrapper<GoodsAttribute>().eq(GoodsAttribute::getGoodsId, id));

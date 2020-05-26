@@ -1,4 +1,4 @@
-package org.linlinjava.litemall.db.common.config;
+package org.linlinjava.litemall.db.common.config.rest;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;

@@ -25,12 +25,11 @@ import org.linlinjava.litemall.db.common.handler.JsonIntegerArrayTypeHandler;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_topic")
-public class Topic implements Serializable {
+public class Topic extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+
 
     /**
      * 专题标题
@@ -73,20 +72,7 @@ public class Topic implements Serializable {
     @TableField(typeHandler = JsonIntegerArrayTypeHandler.class)
     private Integer[] goods;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
 
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

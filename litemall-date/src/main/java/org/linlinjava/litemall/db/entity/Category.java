@@ -22,12 +22,9 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("litemall_category")
-public class Category implements Serializable {
+public class Category extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
-
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
 
     /**
      * 类目名称
@@ -67,20 +64,6 @@ public class Category implements Serializable {
      */
     private Integer sortOrder;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime addTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
-
-    /**
-     * 逻辑删除
-     */
-    private Boolean deleted;
 
 
 }

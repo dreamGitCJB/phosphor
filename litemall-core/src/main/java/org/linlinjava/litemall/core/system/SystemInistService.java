@@ -17,15 +17,15 @@ import java.util.stream.Collectors;
  * 系统启动服务，用于设置系统配置信息、检查系统状态及打印系统信息
  */
 @Component
-class SystemInistService {
+public class SystemInistService {
     private SystemInistService systemInistService;
 
 
     @Autowired
     private Environment environment;
 
-    @PostConstruct
-    private void inist() {
+//    @PostConstruct
+    public void inist() {
         systemInistService = this;
         initConfigs();
         SystemInfoPrinter.printInfo("Litemall 初始化信息", getSystemInfo());

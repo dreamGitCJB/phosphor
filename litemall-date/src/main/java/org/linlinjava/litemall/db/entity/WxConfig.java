@@ -20,20 +20,9 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("tb_wx_config")
-public class WxConfig implements Serializable {
+public class WxConfig extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
-
-    /**
-     * 小程序id
-     */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
-
-    /**
-     * 租户ID
-     */
-    private String tenantId;
 
     /**
      * 小程序名称
@@ -85,15 +74,6 @@ public class WxConfig implements Serializable {
      */
     private String apikey;
 
-    /**
-     * 创建时间
-     */
-    private Integer createTime;
-
-    /**
-     * 更新时间
-     */
-    private Integer updateTime;
 
 
 }
