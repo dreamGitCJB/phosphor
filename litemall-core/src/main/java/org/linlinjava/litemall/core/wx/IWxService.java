@@ -19,4 +19,5 @@ public interface IWxService {
 	 */
 	 AuthCode2SessionVo authCode2Session(String code, String tenantId);
 
+
 }

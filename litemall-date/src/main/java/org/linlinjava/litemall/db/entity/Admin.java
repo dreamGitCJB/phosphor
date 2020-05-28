@@ -9,6 +9,7 @@ import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.linlinjava.litemall.db.common.handler.JsonIntegerArrayTypeHandler;
 import org.linlinjava.litemall.db.common.handler.JsonStringArrayTypeHandler;
 
 /**
@@ -59,7 +60,7 @@ public class Admin extends BaseEntity {
      * 角色列表
      */
 
-    @TableField(typeHandler = JsonStringArrayTypeHandler.class)
+    @TableField(typeHandler = JsonIntegerArrayTypeHandler.class)
     private Integer[] roleIds;
 
 

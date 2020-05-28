@@ -8,6 +8,7 @@ import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.db.entity.Region;
 import org.linlinjava.litemall.db.service.IRegionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,17 +36,18 @@ public class AdminRegionController {
     }
 
     @GetMapping("/list")
+	@Cacheable(value = "regionCache" ,key = "'region:'+#root.method.name",condition = "true")
     public Object list() {
         List<RegionVo> regionVoList = new ArrayList<>();
 
         List<Region> litemallRegions = regionService.list();
         Map<Integer, List<Region>> collect = litemallRegions.stream().collect(Collectors.groupingBy(Region::getType));
-        byte provinceType = 1;
+        Integer provinceType = 1;
         List<Region> provinceList = collect.get(provinceType);
-        byte cityType = 2;
+		Integer cityType = 2;
         List<Region> city = collect.get(cityType);
         Map<Integer, List<Region>> cityListMap = city.stream().collect(Collectors.groupingBy(Region::getPid));
-        byte areaType = 3;
+		Integer areaType = 3;
         List<Region> areas = collect.get(areaType);
         Map<Integer, List<Region>> areaListMap = areas.stream().collect(Collectors.groupingBy(Region::getPid));
 

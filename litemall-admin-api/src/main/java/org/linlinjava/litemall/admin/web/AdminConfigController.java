@@ -58,7 +58,6 @@ public class AdminConfigController {
 
         Map<String, String> data = systemConfigService.list(new LambdaQueryWrapper<System>()
                 .likeRight(System::getKeyName, "litemall_express_")).stream().collect(Collectors.toMap(System::getKeyName,System::getKeyValue));
-                listExpress();
         return ResponseUtil.ok(data);
     }
 
@@ -84,7 +83,6 @@ public class AdminConfigController {
     public Object lisOrder() {
         Map<String, String> data = systemConfigService.list(new LambdaQueryWrapper<System>()
                 .likeRight(System::getKeyName, "litemall_order_")).stream().collect(Collectors.toMap(System::getKeyName,System::getKeyValue));
-        listWx();
         return ResponseUtil.ok(data);
     }
 
@@ -109,7 +107,6 @@ public class AdminConfigController {
     public Object listWx() {
         Map<String, String> data = systemConfigService.list(new LambdaQueryWrapper<System>()
                 .likeRight(System::getKeyName, "litemall_wx_")).stream().collect(Collectors.toMap(System::getKeyName,System::getKeyValue));
-                listWx();
         return ResponseUtil.ok(data);
     }
 
