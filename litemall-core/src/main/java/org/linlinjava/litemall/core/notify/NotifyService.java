@@ -3,14 +3,18 @@ package org.linlinjava.litemall.core.notify;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 商城通知服务类
+ * @author chenjinbao
  */
+@Resource
 public class NotifyService {
     private MailSender mailSender;
     private String sendFrom;

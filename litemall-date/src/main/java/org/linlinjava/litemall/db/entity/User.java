@@ -94,6 +94,15 @@ public class User extends BaseEntity {
     private Integer status;
 
 
+	/**
+	 * 邀请码
+	 */
+	private String inviteCode;
+
+	/**
+	 * 邀请人ID
+	 */
+    private Integer invitedId;
 
 
 }

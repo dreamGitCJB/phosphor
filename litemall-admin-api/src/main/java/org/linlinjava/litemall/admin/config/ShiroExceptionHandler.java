@@ -27,7 +27,7 @@ public class ShiroExceptionHandler {
     @ExceptionHandler(AuthorizationException.class)
     @ResponseBody
     public Object unauthorizedHandler(AuthorizationException e) {
-        logger.warn(e.getMessage(), e);
+	        logger.warn(e.getMessage(), e);
         return ResponseUtil.unauthz();
     }
 

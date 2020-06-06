@@ -1,5 +1,6 @@
 package org.linlinjava.litemall.admin.vo;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;

@@ -12,4 +12,8 @@ public class UserInfo {
     private String city;
     private String language;
     private Integer gender;
+	/**
+	 * 是否第一次登录
+	 */
+	private Boolean firstLogin;
 }

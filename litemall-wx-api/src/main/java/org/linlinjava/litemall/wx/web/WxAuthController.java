@@ -1,6 +1,7 @@
 package org.linlinjava.litemall.wx.web;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.AllArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.notify.NotifyService;
@@ -37,19 +38,15 @@ import static org.linlinjava.litemall.wx.util.WxResponseCode.*;
 @RestController
 @RequestMapping("/wx/auth")
 @Validated
+@AllArgsConstructor
 public class WxAuthController {
-    private final Log logger = LogFactory.getLog(WxAuthController.class);
 
-    @Autowired
     private IUserService userService;
 
-    @Autowired
     private NotifyService notifyService;
 
-    @Autowired
     private ICouponUserService couponUserService;
 
-    @Autowired
     private IWxService wxService;
 
     /**
@@ -149,6 +146,8 @@ public class WxAuthController {
 
             userService.save(user);
 
+            userInfo.setFirstLogin(true);
+
             // 新用户发送注册优惠券
             couponUserService.assignForRegister(user.getId());
         } else {
@@ -158,12 +157,13 @@ public class WxAuthController {
             if (!userService.updateById(user)) {
                 return ResponseUtil.updatedDataFailed();
             }
+			userInfo.setFirstLogin(false);
         }
 
         // token
         String token = UserTokenManager.generateToken(user.getId());
 
-        Map<Object, Object> result = new HashMap<Object, Object>();
+        Map<Object, Object> result = new HashMap<>(2);
         result.put("token", token);
         result.put("userInfo", userInfo);
         return ResponseUtil.ok(result);

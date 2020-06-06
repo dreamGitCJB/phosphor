@@ -7,7 +7,7 @@ Page({
   data: {
     userInfo: {
       nickName: '点击登录',
-      avatarUrl: '/static/images/my.png'
+      avatarUrl: '/static/images/my.jpg'
     },
     order: {
       unpaid: 0,
