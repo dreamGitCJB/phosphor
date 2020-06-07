@@ -7,7 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.ResponseUtil;
 import org.linlinjava.litemall.core.validator.Order;
 import org.linlinjava.litemall.core.validator.Sort;
-import org.linlinjava.litemall.db.common.util.AftersaleConstant;
+import org.linlinjava.litemall.db.common.constans.AftersaleConstant;
 import org.linlinjava.litemall.db.common.util.OrderUtil;
 import org.linlinjava.litemall.db.common.util.PageUtil;
 import org.linlinjava.litemall.db.entity.Aftersale;

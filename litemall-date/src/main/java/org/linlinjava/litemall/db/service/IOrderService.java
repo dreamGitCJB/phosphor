@@ -1,10 +1,8 @@
 package org.linlinjava.litemall.db.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.linlinjava.litemall.db.common.util.AftersaleConstant;
 import org.linlinjava.litemall.db.entity.Order;
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;

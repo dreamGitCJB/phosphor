@@ -1,4 +1,4 @@
-package org.linlinjava.litemall.db.common.util;
+package org.linlinjava.litemall.db.common.constans;
 
 public class AftersaleConstant {
     public static final Integer STATUS_INIT = 0;
