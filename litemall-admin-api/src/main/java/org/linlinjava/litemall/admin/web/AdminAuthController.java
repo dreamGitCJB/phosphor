@@ -14,7 +14,7 @@ import org.linlinjava.litemall.admin.util.Permission;
 import org.linlinjava.litemall.admin.util.PermissionUtil;
 import org.linlinjava.litemall.core.util.IpUtil;
 import org.linlinjava.litemall.core.util.JacksonUtil;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.entity.Admin;
 import org.linlinjava.litemall.db.service.IAdminService;
 import org.linlinjava.litemall.db.service.IPermissionService;

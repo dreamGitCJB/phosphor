@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.util.JacksonUtil;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.entity.Footprint;
 import org.linlinjava.litemall.db.entity.Goods;
 import org.linlinjava.litemall.db.service.IFootprintService;

@@ -1,4 +1,4 @@
-package org.linlinjava.litemall.core.util;
+package org.linlinjava.litemall.db.common.result;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -47,6 +47,10 @@ public class ResponseUtil {
         obj.put("errmsg", "成功");
         return obj;
     }
+
+    public static Object status(boolean isFlag) {
+    	return isFlag ? ok() : fail();
+	}
 
     public static Object ok(Object data) {
         Map<String, Object> obj = new HashMap<String, Object>();

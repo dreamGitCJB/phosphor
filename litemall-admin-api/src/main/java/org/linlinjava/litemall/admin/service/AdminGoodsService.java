@@ -7,7 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.admin.dto.GoodsAllinone;
 import org.linlinjava.litemall.admin.vo.CatVo;
 import org.linlinjava.litemall.core.qcode.QCodeService;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.entity.*;
 import org.linlinjava.litemall.db.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -167,7 +167,7 @@ public class AdminGoodsService {
             }
         }
         goods.setRetailPrice(retailPrice);
-        
+
         // 商品基本信息表litemall_goods
         if (!goodsService.updateById(goods)) {
             throw new RuntimeException("更新数据失败");

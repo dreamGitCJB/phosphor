@@ -10,4 +10,10 @@ package org.linlinjava.litemall.db.common.constans;
 
 public class CommonConstant {
 	public static String DEFAULT_TENANT = "000000";
+
+	public static final String DEFAULT_SUCCESS_MESSAGE = "操作成功";
+
+	public static final String DEFAULT_FAILURE_MESSAGE = "操作失败";
+
+	public static final String DEFAULT_NULL_MESSAGE = "暂无承载数据";
 }

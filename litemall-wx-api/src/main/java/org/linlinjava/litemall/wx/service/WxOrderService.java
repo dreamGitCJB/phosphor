@@ -24,7 +24,7 @@ import org.linlinjava.litemall.core.system.SystemConfig;
 import org.linlinjava.litemall.core.task.TaskService;
 import org.linlinjava.litemall.core.util.DateTimeUtil;
 import org.linlinjava.litemall.core.util.JacksonUtil;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.common.constans.CouponUserConstant;
 import org.linlinjava.litemall.db.common.constans.GrouponConstant;
 import org.linlinjava.litemall.db.common.util.OrderHandleOption;

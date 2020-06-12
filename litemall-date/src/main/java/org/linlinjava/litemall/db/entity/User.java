@@ -104,5 +104,10 @@ public class User extends BaseEntity {
 	 */
     private Integer invitedId;
 
+	/**
+	 * 被邀请时间
+	 */
+	private LocalDateTime invitedTime;
+
 
 }

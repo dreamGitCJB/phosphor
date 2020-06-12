@@ -12,6 +12,10 @@
     <artifactId>litemall-date</artifactId>
     <version>0.1.0</version>
     <packaging>jar</packaging>
+	<properties>
+		<swagger.version>2.9.2</swagger.version>
+		<swagger.models.version>1.5.21</swagger.models.version>
+	</properties>
 
     <dependencies>
 
@@ -28,6 +32,17 @@
             <artifactId>lombok</artifactId>
             <!--<optional>true</optional>-->
         </dependency>
+
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.swagger</groupId>
+			<artifactId>swagger-models</artifactId>
+			<version>${swagger.models.version}</version>
+		</dependency>
 
 <!--        <dependency>-->
 <!--            <groupId>com.baomidou</groupId>-->

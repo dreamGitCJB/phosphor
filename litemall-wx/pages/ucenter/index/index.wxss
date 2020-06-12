@@ -91,15 +91,20 @@ page {
 
 .user_column {
   /* border: 1px solid black; */
-  height: 140rpx;
+  height: 310rpx;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-wrap: wrap;
+
+  /* width: 100%; */
+
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .user_column_item {
-  width: 30%;
+  width: 23%;
   height: 140rpx;
+  margin-left: 12rpx;
   background: #fff;
   text-align: center;
   position: relative;
@@ -136,7 +141,7 @@ page {
 }
 
 .user_column_item_phone {
-  width: 30%;
+  width: 23%;
   height: 140rpx;
   text-align: center;
   display: flex;

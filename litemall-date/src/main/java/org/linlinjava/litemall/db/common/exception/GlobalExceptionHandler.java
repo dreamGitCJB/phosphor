@@ -1,9 +1,9 @@
-package org.linlinjava.litemall.core.config;
+package org.linlinjava.litemall.db.common.exception;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.validator.internal.engine.path.PathImpl;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -72,4 +72,11 @@ public class GlobalExceptionHandler {
         logger.error(e.getMessage(), e);
         return ResponseUtil.serious();
     }
+
+	@ExceptionHandler(ServiceException.class)
+	@ResponseBody
+	public Object exceptionHandler(ServiceException e) {
+		logger.error(e.getMessage(), e);
+		return ResponseUtil.fail(e.getResultCode().getCode(), e.getMessage());
+	}
 }

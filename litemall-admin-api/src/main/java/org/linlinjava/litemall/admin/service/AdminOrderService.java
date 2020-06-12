@@ -12,7 +12,7 @@ import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.core.notify.NotifyService;
 import org.linlinjava.litemall.core.notify.NotifyType;
 import org.linlinjava.litemall.core.util.JacksonUtil;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.common.util.OrderUtil;
 import org.linlinjava.litemall.db.common.util.PageUtil;
 import org.linlinjava.litemall.db.entity.Comment;

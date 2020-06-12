@@ -8,8 +8,9 @@
 
   <view class='separate'></view>
 
-  <view class='user_area'>
+  <!-- <view class='user_area'> -->
     <view class='user_row' bindtap='goOrder'>
+    
       <view class='user_row_left'>我的订单</view>
       <van-icon class='user_row_right' name="arrow" />      
     </view>
@@ -40,7 +41,7 @@
         <view class='user_column_item_text'>售后</view>
       </view>
     </view>
-  </view>
+  <!-- </view> -->
 
   <view class='separate'></view>
 
@@ -52,6 +53,10 @@
     <view class='user_column_item' bindtap='goCoupon'>
       <image class='user_column_item_image' src='/static/images/coupon.png'></image>
       <view class='user_column_item_text'>优惠卷</view>
+    </view>
+    <view class='user_column_item' bindtap='goInvited'>
+      <image class='user_column_item_image' src='/static/images/about.png'></image>
+      <view class='user_column_item_text'>邀请码</view>
     </view>
     <view class='user_column_item' bindtap='goCollect'>
       <image class='user_column_item_image' src='/static/images/collect.png'></image>
@@ -70,6 +75,7 @@
       <image class='user_column_item_image' src='/static/images/address.png'></image>
       <view class='user_column_item_text'>地址管理</view>
     </view>
+    
   </view>
   <view class='separate'></view>
 
@@ -100,6 +106,7 @@
       <image class='user_column_item_image' src='/static/images/about.png'></image>
       <view class='user_column_item_text'>关于我们</view>
     </view>
+    
   </view>
   <view class='separate'></view>
 

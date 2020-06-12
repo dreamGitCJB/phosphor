@@ -3,7 +3,7 @@ package org.linlinjava.litemall.wx.web;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.linlinjava.litemall.core.util.ResponseUtil;
+import org.linlinjava.litemall.db.common.result.ResponseUtil;
 import org.linlinjava.litemall.db.entity.Keyword;
 import org.linlinjava.litemall.db.entity.SearchHistory;
 import org.linlinjava.litemall.db.service.IKeywordService;
