@@ -1,0 +1,117 @@
+/* pages/ucenter/invited/invited.wxss */
+
+page {
+  height: 100%;
+  width: 100%;
+  background: #c3caf8;
+}
+
+.container {
+  background: #c3caf8;
+  height: auto;
+  overflow: hidden;
+  width: 100%;
+  
+}
+
+.invitedView {
+  background-color: #fff;
+  height: 220rpx;
+  width: 710rpx;
+  display: flex;
+  margin-left: 20rpx;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  position: absolute;
+  top: 40rpx;
+  left: 0;
+  border-radius: 10rpx;
+  border-bottom: 6rpx solid #e0e3da;
+}
+
+.separate {
+  background: #fff;
+  width: 100rpx;
+  height: 4rpx;
+}
+
+.invitedbg {
+  height: 100px;
+  flex-direction: row;
+}
+
+.invitedText {
+  font-size: 15px;
+  margin-top: 50rpx;
+}
+
+
+.invitedCode {
+  font-size: 25px;
+  font-weight: 15;
+}
+
+.invitedRecordTitleView {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 290rpx;
+  position: relative;
+}
+
+.invitedRecordTitle {
+  color: #fff;
+  margin: 0 25rpx;
+}
+.invitedListView {
+  background-color: #fff;
+  width: 710rpx;
+  min-height: 150rpx;
+  margin-left: 20rpx;
+  margin-top: 30rpx;
+  border-radius: 10rpx;
+}
+
+.invitedListView .item {
+  height: 120rpx;
+  margin-left: 5rpx;
+  width: 700rpx;
+  overflow: hidden;
+  padding-bottom: 125rpx;
+  border-bottom: 2rpx solid #d9d9d9;
+}
+
+.item .invitImage {
+  margin: 20rpx 30rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 1rpx solid gray;
+  float: left;
+}
+
+.item:last-child {
+  padding-bottom: 120rpx;
+  border-bottom: none;
+}
+
+.item .nickname {
+  display: block;
+  float: left;
+  margin-top: 25rpx;
+}
+
+.item .invitedTime {
+  /* float: left; */
+  display: block;
+  font-size: 24rpx;
+  color: rgb(119, 110, 110);
+  margin-top: 70rpx;
+}
+
+.item .score {
+  float: right;
+  margin-top: -55rpx;
+  margin-right: 40rpx;
+}

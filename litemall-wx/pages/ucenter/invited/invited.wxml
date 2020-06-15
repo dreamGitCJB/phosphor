@@ -1,0 +1,21 @@
+<view class="container">
+    <!-- <image class="invitedbg" src="/static/images/invitedbg.jpeg"></image> -->
+    <view class="invitedView">
+      <text class="invitedText">您的邀请码</text>
+      <text class="invitedCode">{{invitedCode}}</text>
+    </view>
+    <view class="invitedRecordTitleView">
+      <label class="separate"></label>
+      <text class=".invitedRecordTitle">邀请记录</text>
+      <label class="separate"></label>
+    </view>    
+
+    <view class="invitedListView">
+        <view class="item" wx:for="{{invitedList}}" wx:key="id">
+           <image src="{{item.avatar}}" class="invitImage"></image>
+           <text class="nickname">{{item.nickname}}</text>
+           <text class="invitedTime">{{item.invitedTime}}</text>
+           <text class="score">+25分</text>
+        </view>
+    </view>
+</view>

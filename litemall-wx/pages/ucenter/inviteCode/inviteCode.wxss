@@ -1,0 +1,47 @@
+/* pages/ucenter/inviteCode/inviteCode.wxss */
+page {
+  height: 100%;
+  width: 100%;
+  background: #c3caf8;
+}
+
+.container {
+  /* background: #c3caf8; */
+  height: auto;
+  overflow: hidden;
+  width: 100%;
+  
+}
+
+.invitedView {
+  background-color: #fff;
+  margin-top: 100rpx;
+  height: 520rpx;
+  width: 710rpx;
+  display: flex;
+  margin-left: 20rpx;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  position: absolute;
+  top: 40rpx;
+  left: 0;
+  border-radius: 10rpx;
+  border-bottom: 6rpx solid #e0e3da;
+}
+
+.phoneInput {
+  width: 380rpx;
+  height: 80rpx;
+  text-align: center;
+  border: 1rpx solid #e0e3da;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+}
+
+.sub_button {
+  width: 380rpx;
+  height: 75rpx;
+  line-height: 75rpx;
+  font-size: 26rpx;
+}

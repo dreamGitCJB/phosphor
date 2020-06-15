@@ -1,0 +1,10 @@
+<!--pages/ucenter/inviteCode/inviteCode.wxml-->
+<text>邀请你的用户的UserId：{{inviteUserId}}</text>
+<view class="container">
+ <view class="invitedView">
+ <text>请输入你的手机，你将获取一定的积分</text>
+  <input class="phoneInput" maxlength="11" placeholder="请填写手机号" cursor='355' type='number' bindinput='inputChangeMethod' ></input>
+  <button type="primary" class="sub_button" disabled="{{buttonDisable}}" >领取新人福利</button>
+ </view>
+ 
+</view>

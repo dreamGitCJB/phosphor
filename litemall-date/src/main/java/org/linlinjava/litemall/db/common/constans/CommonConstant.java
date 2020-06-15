@@ -9,6 +9,11 @@ package org.linlinjava.litemall.db.common.constans;
  */
 
 public class CommonConstant {
+
+	public static final String DEFAULT_PAGE = "1";
+
+	public static final String DEFAULT_SIZE = "20";
+
 	public static String DEFAULT_TENANT = "000000";
 
 	public static final String DEFAULT_SUCCESS_MESSAGE = "操作成功";
