@@ -1,5 +1,7 @@
 package org.linlinjava.litemall.db.common.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
+
 /**
  * @ClassName : IntegralType
  * @Description : 积分类型
@@ -11,6 +13,7 @@ public enum IntegralType {
 
 	INVITE_NEW_MEMBERS(0,"邀请新人");
 
+	@EnumValue
 	private int code;
 	private String name;
 

@@ -1,6 +1,10 @@
 // pages/ucenter/inviteCode/inviteCode.js
 
 var app = getApp();
+var util = require('../../../utils/util.js');
+var api = require('../../../config/api.js');
+
+
 
 Page({
 
@@ -8,9 +12,13 @@ Page({
    * 页面的初始数据
    */
   data: {
-    inviteUserId:'00000',
+    
     buttonDisable:'disabled',
-    phone:'',
+    param: {
+      inviteUserId:'',
+      phone:'',
+    },
+    
   },
 
   /**
@@ -18,24 +26,29 @@ Page({
    */
   onLoad: function (options) {
     if(options.userId != undefined) {
+
+      const requestParam = this.data.param;
+
+      requestParam.inviteUserId = options.userId;
+
       this.setData({
-        inviteUserId: options.userId,
+        param: requestParam,
       });
     }
     
 
     // //获取用户的登录信息
-    // if (app.globalData.hasLogin) {
-    //   let userInfo = wx.getStorageSync('userInfo');
-    //   this.setData({
-    //     userInfo: userInfo,
-    //     hasLogin: true
-    //   });
-    // } else {
-    //   wx.navigateTo({
-    //     url: "/pages/auth/login/login"
-    //   });
-    // };    
+    if (app.globalData.hasLogin) {
+      let userInfo = wx.getStorageSync('userInfo');
+      this.setData({
+        userInfo: userInfo,
+        hasLogin: true
+      });
+    } else {
+      wx.navigateTo({
+        url: "/pages/auth/login/login"
+      });
+    };    
   },
 
   /**
@@ -90,8 +103,10 @@ Page({
 
     if(value.length === 11 && value.charAt(0) == 1) {
       console.log("-------")
+      const requestParam = this.data.param;
+      requestParam.phone = value;
       this.setData({
-        phone: value,
+        param :requestParam,
         buttonDisable: '',
       })
     } else {
@@ -99,6 +114,20 @@ Page({
         buttonDisable:'disabled'
       })
     }
+  },
+
+  clickMethod() {
+
+    const param = this.data.param;
+
+    util.request(api.InvitedPhone, param, 'POST').then((res) => {
+      if (res.errno === 0) {
+        wx.navigateTo({
+          url: "pages/index/index",
+        });
+      }
+    }),
+    console.log();
   }
 
 })

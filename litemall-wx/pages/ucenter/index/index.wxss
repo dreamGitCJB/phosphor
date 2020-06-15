@@ -41,6 +41,33 @@ page {
   margin-bottom: 10rpx;
 }
 
+.profile-info .integral {
+  display: block;
+  height: 40rpx;
+  width: 147rpx;
+  /* background-color: #b4282d; */
+  border: 1rpx solid #ab956d;
+}
+
+.profile-info .integral .mine_integral {
+  color: #fff;
+  display: inline-block;
+  height: 40rpx;
+  width: 100rpx;
+  font-size: 25rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+.profile-info .integral .integral_row_right {
+  float: right;
+  height: 40rpx;
+  width: 40rpx;
+  color: #fff;
+  font-weight: 550;
+  line-height: 40rpx;
+}
+
 .profile-info .level {
   display: block;
   height: 30rpx;

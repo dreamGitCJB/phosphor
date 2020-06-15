@@ -24,7 +24,7 @@ page {
   justify-content: space-around;
   align-items: center;
   position: absolute;
-  top: 40rpx;
+  top: 280rpx;
   left: 0;
   border-radius: 10rpx;
   border-bottom: 6rpx solid #e0e3da;
@@ -37,8 +37,9 @@ page {
 }
 
 .invitedbg {
-  height: 100px;
-  flex-direction: row;
+  height: 240rpx;
+  width: 100%;
+  /* flex-direction: row; */
 }
 
 .invitedText {

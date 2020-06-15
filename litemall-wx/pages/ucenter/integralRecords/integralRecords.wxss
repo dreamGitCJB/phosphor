@@ -1,0 +1,23 @@
+/* pages/ucenter/integralRecords/integralRecords.wxss */
+
+page {
+  height: 100%;
+  width: 100%;
+  background: #f4f4f4;
+}
+
+.container {
+  background: #f4f4f4;
+  height: auto;
+  overflow: hidden;
+  width: 100%;
+}
+
+.totalIntegralView {
+  height: 300rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background-color: #ab956d;
+}

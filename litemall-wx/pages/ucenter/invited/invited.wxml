@@ -1,5 +1,5 @@
 <view class="container">
-    <!-- <image class="invitedbg" src="/static/images/invitedbg.jpeg"></image> -->
+    <image class="invitedbg" src="/static/images/invitedbg.jpeg"></image>
     <view class="invitedView">
       <text class="invitedText">您的邀请码</text>
       <text class="invitedCode">{{invitedCode}}</text>

@@ -7,7 +7,8 @@ Page({
   data: {
     userInfo: {
       nickName: '点击登录',
-      avatarUrl: '/static/images/my.jpg'
+      avatarUrl: '/static/images/my.jpg',
+      integral: '',
     },
     order: {
       unpaid: 0,
@@ -243,5 +244,11 @@ Page({
       }
     })
 
+  },
+
+  goIntegralRecords() {
+    wx.navigateTo({
+      url: '/pages/ucenter/integralRecords/integralRecords',
+    })
   }
 })

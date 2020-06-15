@@ -3,6 +3,12 @@
     <image class="avatar" src="{{userInfo.avatarUrl}}"></image>
     <view class="info">
       <text class="name">{{userInfo.nickName}}</text>
+
+      <view class="integral"> 
+        <text class="mine_integral" bindtap="goIntegralRecords">我的积分</text>
+        <van-icon class='integral_row_right' name="arrow"  color='#fff'/>  
+      </view>
+      
     </view>
   </view>
 

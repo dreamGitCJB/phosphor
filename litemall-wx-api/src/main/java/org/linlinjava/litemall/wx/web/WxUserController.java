@@ -187,4 +187,18 @@ public class WxUserController {
 
     	return ResponseUtil.okPageList(iPage);
 	}
+
+	@GetMapping("/integral-total")
+	public Object integralTotal(@LoginUser Integer userId) {
+		if (userId == null) {
+			return ResponseUtil.unlogin();
+		}
+
+		BigDecimal integral = integralRecordService.list(Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getUserId, userId)).stream().map(IntegralRecord::getIntegral).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		Map<String,Object> map = new HashMap<>(1);
+		map.put("integral",integral);
+
+		return ResponseUtil.ok(map);
+	}
 }

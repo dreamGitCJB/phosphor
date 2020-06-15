@@ -1,6 +1,7 @@
 package org.linlinjava.litemall.wx.web;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.AllArgsConstructor;
 import org.linlinjava.litemall.core.notify.NotifyService;
 import org.linlinjava.litemall.core.notify.NotifyType;
@@ -10,8 +11,10 @@ import org.linlinjava.litemall.core.vo.AuthCode2SessionVo;
 import org.linlinjava.litemall.core.wx.IWxService;
 import org.linlinjava.litemall.db.common.constans.CommonConstant;
 import org.linlinjava.litemall.db.common.result.ResponseUtil;
+import org.linlinjava.litemall.db.entity.IntegralRecord;
 import org.linlinjava.litemall.db.entity.User;
 import org.linlinjava.litemall.db.service.ICouponUserService;
+import org.linlinjava.litemall.db.service.IIntegralRecordService;
 import org.linlinjava.litemall.db.service.IUserService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
 import org.linlinjava.litemall.wx.dto.UserInfo;
@@ -23,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +48,8 @@ public class WxAuthController {
     private NotifyService notifyService;
 
     private ICouponUserService couponUserService;
+
+    private IIntegralRecordService integralRecordService;
 
     private IWxService wxService;
 
@@ -126,6 +132,7 @@ public class WxAuthController {
         if (sessionKey == null || openId == null) {
             return ResponseUtil.fail();
         }
+		BigDecimal integral = null;
 
         User user = userService.getOne(new LambdaQueryWrapper<User>().eq(User::getWeixinOpenid, openId));
         if (user == null) {
@@ -148,6 +155,12 @@ public class WxAuthController {
 
             // 新用户发送注册优惠券
             couponUserService.assignForRegister(user.getId());
+
+			List<IntegralRecord> list = integralRecordService.list(Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getUserId, user.getId()));
+
+			integral = list.stream().map(IntegralRecord::getIntegral).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
         } else {
             user.setLastLoginTime(LocalDateTime.now());
             user.setLastLoginIp(IpUtil.getIpAddr(request));
@@ -158,7 +171,9 @@ public class WxAuthController {
 			userInfo.setFirstLogin(false);
         }
 
-        // token
+		userInfo.setIntegral(integral != null ? integral : BigDecimal.ZERO);
+
+		// token
         String token = UserTokenManager.generateToken(user.getId());
 
         Map<Object, Object> result = new HashMap<>(2);

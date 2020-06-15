@@ -1,0 +1,7 @@
+<!--pages/ucenter/integralRecords/integralRecords.wxml-->
+<view class="container">
+  <view class="totalIntegralView">
+     <text>可用积分</text>
+     <text>{{integralTotal}}</text>
+  </view>
+</view>
