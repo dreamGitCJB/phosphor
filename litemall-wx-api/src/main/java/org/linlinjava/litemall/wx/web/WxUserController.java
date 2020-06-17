@@ -18,15 +18,15 @@ import org.linlinjava.litemall.db.service.IIntegralRecordService;
 import org.linlinjava.litemall.db.service.IOrderService;
 import org.linlinjava.litemall.db.service.IUserService;
 import org.linlinjava.litemall.wx.annotation.LoginUser;
+import org.linlinjava.litemall.wx.dto.InviteRecordsDTO;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 用户服务
@@ -83,7 +83,12 @@ public class WxUserController {
 		}
 		User user = userService.getOne(Wrappers.lambdaQuery(User.class).eq(User::getInviteCode, map.get("invitePhone")));
 		if (user != null) {
-			return ResponseUtil.fail(1000,"您不是新用户了");
+			return ResponseUtil.fail(1000,"抱歉！您已经接受过邀请了");
+		}
+
+		IntegralRecord one = integralRecordService.getOne(Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getValueId, userId).eq(IntegralRecord::getIntegralType, IntegralType.INVITE_NEW_MEMBERS.getCode()));
+		if (one != null) {
+			return ResponseUtil.fail(1000,"抱歉！您已经接受过邀请了");
 		}
 
 		/**
@@ -166,26 +171,53 @@ public class WxUserController {
 			userService.updateById(updateUser);
 		}
 
-		List<IntegralRecord> integralRecord = integralRecordService.list(Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getUserId, userId));
+		List<IntegralRecord> integralRecord = integralRecordService.list(Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getUserId, userId).eq(IntegralRecord::getIntegralType,IntegralType.INVITE_NEW_MEMBERS.getCode()).orderByDesc(IntegralRecord::getAddTime));
 
-		List<User> list = userService.list(Wrappers.lambdaQuery(User.class).eq(User::getInvitedId, userId));
+		Map<Integer, IntegralRecord> collect = integralRecord.stream().collect(Collectors.toMap(IntegralRecord::getValueId, obj -> obj));
+
+		List<InviteRecordsDTO> list = null;
+		if (collect.keySet().size() > 0) {
+			list = userService.listByIds(collect.keySet()).stream().filter(obj -> collect.keySet().contains(obj.getId())).map(obj -> {
+				InviteRecordsDTO inviteRecordsDTO = new InviteRecordsDTO();
+				inviteRecordsDTO.setId(obj.getId());
+				inviteRecordsDTO.setAvatar(obj.getAvatar());
+				IntegralRecord record = collect.get(obj.getId());
+				inviteRecordsDTO.setInvitedTime(record.getAddTime());
+				inviteRecordsDTO.setIntegral(record.getIntegral());
+				return inviteRecordsDTO;
+			}).collect(Collectors.toList());
+		}
+
 		Map<String, Object> map = new HashMap<>(2);
 		map.put("inviteCode", random);
-		map.put("inviteList", list);
+		map.put("inviteList", Optional.ofNullable(list).orElse(new ArrayList<>()));
 		return ResponseUtil.ok(map);
 	}
 
+	/**
+	 *
+	 * @param userId
+	 * @param limit
+	 * @param size
+	 * @param showType 0明细 1收入 2 支出
+	 * @return
+	 */
 	@GetMapping("/integral-record")
-	public Object integralRecord(@LoginUser Integer userId, @RequestParam(defaultValue = CommonConstant.DEFAULT_PAGE) int limit, @RequestParam(defaultValue = CommonConstant.DEFAULT_SIZE) int size) {
+	public Object integralRecord(@LoginUser Integer userId,
+								 @RequestParam(defaultValue = CommonConstant.DEFAULT_PAGE) int limit,
+								 @RequestParam(defaultValue = CommonConstant.DEFAULT_SIZE) int size,
+								 @RequestParam(defaultValue = CommonConstant.DEFAULT_ZERO) int showType) {
 
 		Page page = new Page(limit, size);
 		List<OrderItem> orderItems = new ArrayList<>();
 		orderItems.add(OrderItem.desc("add_time"));
 		page.setOrders(orderItems);
 
-    	IPage iPage = integralRecordService.page(page,Wrappers.lambdaQuery(IntegralRecord.class).eq(IntegralRecord::getUserId, userId));
-
-    	return ResponseUtil.okPageList(iPage);
+    	IPage<IntegralRecord> iPage = integralRecordService.page(page,Wrappers.lambdaQuery(IntegralRecord.class)
+				.eq(IntegralRecord::getUserId, userId)
+				.gt(showType == 1,IntegralRecord::getIntegral, 0)
+				.lt(showType == 2, IntegralRecord::getIntegral, 0));
+		return ResponseUtil.okPageList(iPage);
 	}
 
 	@GetMapping("/integral-total")

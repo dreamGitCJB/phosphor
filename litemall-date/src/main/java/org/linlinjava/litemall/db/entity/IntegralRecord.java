@@ -2,6 +2,8 @@ package org.linlinjava.litemall.db.entity;
 
 import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import org.linlinjava.litemall.db.common.enums.IntegralType;
 import org.linlinjava.litemall.db.entity.BaseEntity;
@@ -34,6 +36,7 @@ public class IntegralRecord extends BaseEntity {
     /**
      * 积分类型
      */
+
     private IntegralType integralType;
 
 	/**

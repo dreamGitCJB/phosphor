@@ -16,9 +16,9 @@ import java.util.List;
  * @Version 1.0.0
  */
 
-public class PageUtil<R,T> {
+public class PageUtil<T> {
 
-	public IPage pagetoPage(IPage<R> page, List<T> list) {
+	public IPage<T> pagetoPage(IPage page, List<T> list) {
 		IPage<T> iPage = new Page<>();
 		iPage.setTotal(page.getTotal());
 		iPage.setSize(page.getSize());

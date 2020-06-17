@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/ucenter/inviteCode/inviteCode",
     "pages/index/index",
     "pages/catalog/catalog",
     "pages/newGoods/newGoods",
@@ -42,8 +43,9 @@
     "pages/ucenter/aftersaleList/aftersaleList",
     "pages/ucenter/aftersaleDetail/aftersaleDetail",
     "pages/ucenter/invited/invited",
-    "pages/ucenter/inviteCode/inviteCode",
+    
     "pages/ucenter/integralRecords/integralRecords"
+    
   ],
   "window": {
     "navigationBarBackgroundColor": "#FFFFFF",

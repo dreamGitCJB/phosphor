@@ -21,3 +21,84 @@ page {
   flex-direction: column;
   background-color: #ab956d;
 }
+
+.totalIntegralView .integralTitle {
+  color: #fff;
+  /* height: 50rpx; */
+  font-size: 28rpx;
+}
+
+.totalIntegralView .integral {
+  color: #fff;
+  height: 80rpx;
+  font-size: 45rpx;
+  font-weight: 300;
+  line-height: 80rpx;
+}
+
+.integral-switch {
+  width: 100%;
+  background: #fff;
+  height: 84rpx;
+  /* border-bottom: 1px solid rgba(0,0,0,.15); */
+}
+
+.integral-switch .item {
+  display: inline-block;
+  height: 82rpx;
+  width: 250rpx;
+  /* padding: 0 15rpx; */
+  text-align: center;
+}
+
+.integral-switch .item .txt {
+  display: inline-block;
+  width: 250rpx;
+  height: 100%;
+  /* padding: 0 20rpx; */
+  line-height: 82rpx;
+  color: #9a9ba1;
+  font-size: 30rpx;
+  /* background-color: aqua; */
+  
+}
+
+.integral-switch .item.active .txt {
+  color: #ab956d;
+  border-bottom: 4rpx solid #ab956d;
+}
+
+.no_integral {
+  width: 100%;
+  background: #fff;
+  margin: 20rpx 0rpx 0 auto;
+}
+
+.no_integral .integral_item {
+  height: 100rpx;
+  width: 730rpx;
+  margin-left: 10rpx;
+  border-bottom: 1rpx solid #ccc;
+}
+
+.integral_type_name {
+  padding-top: 10rpx;
+  width: 500rpx;
+  height: 50rpx;
+  display: block;
+  line-height: 50rpx;
+  margin-left: 20rpx;
+}
+
+.integral_time {
+  margin-left: 20rpx;
+  font-size: 25rpx;
+}
+
+.intagral_num {
+  float: right;
+  margin-top: -50rpx;
+  width: 100rpx;
+  height: 100rpx;
+  line-height: 100rpx;
+}

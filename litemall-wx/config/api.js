@@ -92,6 +92,7 @@ module.exports = {
   InvitedMy: WxApiRoot + 'user/invited', //我的邀请码和我邀请的人的列表
   InvitedPhone: WxApiRoot + 'user/invited-phone', //接受邀请并填写手机号
   IntegralTotal: WxApiRoot + 'user/integral-total', //获取总的积分
+  IntegralList: WxApiRoot + 'user/integral-record', //获取积分列表
 
   CouponList: WxApiRoot + 'coupon/list', //优惠券列表
   CouponMyList: WxApiRoot + 'coupon/mylist', //我的优惠券列表

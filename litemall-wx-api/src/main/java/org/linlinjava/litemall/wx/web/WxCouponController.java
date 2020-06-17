@@ -92,7 +92,7 @@ public class WxCouponController {
 
         List<CouponVo> couponVoList = change(couponUserIPage.getRecords());
 
-        IPage iPage = new PageUtil<CouponUser, CouponVo>().pagetoPage(couponUserIPage, couponVoList);
+        IPage iPage = new PageUtil<CouponVo>().pagetoPage(couponUserIPage, couponVoList);
 
         return ResponseUtil.okPageList(iPage);
     }

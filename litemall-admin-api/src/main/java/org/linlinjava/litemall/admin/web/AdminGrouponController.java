@@ -86,7 +86,7 @@ public class AdminGrouponController {
             }
         }
 
-        IPage iPage = new PageUtil<Groupon, Map<String, Object>>().pagetoPage(grouponList, groupons);
+        IPage iPage = new PageUtil<Map<String, Object>>().pagetoPage(grouponList, groupons);
 
         return ResponseUtil.okPageList(iPage);
     }

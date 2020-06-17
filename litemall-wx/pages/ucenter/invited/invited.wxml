@@ -15,7 +15,7 @@
            <image src="{{item.avatar}}" class="invitImage"></image>
            <text class="nickname">{{item.nickname}}</text>
            <text class="invitedTime">{{item.invitedTime}}</text>
-           <text class="score">+25分</text>
+           <text class="score">+{{item.integral}}分</text>
         </view>
     </view>
 </view>

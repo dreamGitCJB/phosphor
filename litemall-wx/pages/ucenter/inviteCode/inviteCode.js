@@ -12,7 +12,6 @@ Page({
    * 页面的初始数据
    */
   data: {
-    
     buttonDisable:'disabled',
     param: {
       inviteUserId:'',
@@ -35,34 +34,36 @@ Page({
         param: requestParam,
       });
     }
-    
-
-    // //获取用户的登录信息
-    if (app.globalData.hasLogin) {
-      let userInfo = wx.getStorageSync('userInfo');
-      this.setData({
-        userInfo: userInfo,
-        hasLogin: true
-      });
-    } else {
-      wx.navigateTo({
-        url: "/pages/auth/login/login"
-      });
-    };    
+         
   },
 
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
   onReady: function () {
-    console.log(1)
   },
 
   /**
    * 生命周期函数--监听页面显示
    */
   onShow: function () {
-    console.log(2)
+    const that = this;
+    setTimeout(function () {
+      //要延时执行的代码
+      //获取用户的登录信息
+        if (app.globalData.hasLogin) {
+          let userInfo = wx.getStorageSync('userInfo');
+          that.setData({
+            userInfo: userInfo,
+            hasLogin: true
+          });
+        } else {
+          wx.navigateTo({
+            url: "/pages/auth/login/login"
+          });
+        }; 
+     }, 2000) 
+      
   },
 
   /**
@@ -122,9 +123,19 @@ Page({
 
     util.request(api.InvitedPhone, param, 'POST').then((res) => {
       if (res.errno === 0) {
-        wx.navigateTo({
-          url: "pages/index/index",
+        wx.switchTab({
+          url: "/pages/index/index",
         });
+      } else {
+        wx.showToast({
+          title: res.errmsg,
+          icon: 'none',
+          success: () => {
+            wx.switchTab({
+              url: "/pages/index/index",
+            });
+          }
+        })
       }
     }),
     console.log();

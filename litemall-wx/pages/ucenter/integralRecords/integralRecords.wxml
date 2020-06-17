@@ -1,7 +1,27 @@
 <!--pages/ucenter/integralRecords/integralRecords.wxml-->
 <view class="container">
   <view class="totalIntegralView">
-     <text>可用积分</text>
-     <text>{{integralTotal}}</text>
+     <text class="integralTitle">可用积分</text>
+     <text class="integral">{{integralTotal}}</text>
+  </view>
+
+  <view class="integral-switch">
+    <view class="item {{showType == 0 ? 'active' : ''}}" bindtap="switchTab" data-index='0'>
+       <view class="txt">明细</view>
+    </view>
+    <view class="item {{showType == 1 ? 'active' : ''}}" bindtap="switchTab" data-index='1'>
+       <view class="txt">收入</view>
+    </view>
+    <view class="item {{showType == 2 ? 'active' : ''}}" bindtap="switchTab" data-index='2'>
+       <view class="txt">支出</view>
+    </view>
+  </view>
+
+  <view class="no_integral">
+     <navigator class="integral_item" url="" wx:for='{{integralList}}' wx:key="id">
+       <text class="integral_type_name">{{item.integralType.name}}</text>
+       <text class="integral_time">{{item.addTime}}</text>
+       <text class="intagral_num">{{item.integral > 0 ? '+' : '-'}}{{item.integral}}</text>
+     </navigator>
   </view>
 </view>

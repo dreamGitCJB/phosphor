@@ -1,4 +1,7 @@
 {
+  
   "usingComponents": {},
-  "navigationBarTitleText": "我的积分"
+  "navigationBarTitleText": "我的积分",
+  "enablePullDownRefresh": true
+  
 }

@@ -14,6 +14,8 @@ public class CommonConstant {
 
 	public static final String DEFAULT_SIZE = "20";
 
+	public static final String DEFAULT_ZERO = "0";
+
 	public static String DEFAULT_TENANT = "000000";
 
 	public static final String DEFAULT_SUCCESS_MESSAGE = "操作成功";
