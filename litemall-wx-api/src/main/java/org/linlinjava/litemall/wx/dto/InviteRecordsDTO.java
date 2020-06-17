@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class InviteRecordsDTO {
 	private Integer id;
 	private String avatar;
+	private String nickname;
 	private LocalDateTime invitedTime;
 	private BigDecimal integral;
 }

@@ -181,6 +181,7 @@ public class WxUserController {
 				InviteRecordsDTO inviteRecordsDTO = new InviteRecordsDTO();
 				inviteRecordsDTO.setId(obj.getId());
 				inviteRecordsDTO.setAvatar(obj.getAvatar());
+				inviteRecordsDTO.setNickname(obj.getNickname());
 				IntegralRecord record = collect.get(obj.getId());
 				inviteRecordsDTO.setInvitedTime(record.getAddTime());
 				inviteRecordsDTO.setIntegral(record.getIntegral());
