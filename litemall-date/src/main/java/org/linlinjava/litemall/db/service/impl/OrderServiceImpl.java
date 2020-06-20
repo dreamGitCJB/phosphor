@@ -36,7 +36,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     @Override
-    public IPage<Order> queryByOrderStatus(Integer userId, List<Short> orderStatus, Integer current, Integer limit, String sort, String order) {
+    public IPage<Order> queryByOrderStatus(Integer userId, List<Integer> orderStatus, Integer current, Integer limit, String sort, String order) {
 
         Page page = new Page(current, limit);
         PageUtil.pagetoPage(page,sort,order);

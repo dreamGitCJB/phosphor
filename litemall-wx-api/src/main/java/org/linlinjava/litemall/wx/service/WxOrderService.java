@@ -133,7 +133,7 @@ public class WxOrderService {
             return ResponseUtil.unlogin();
         }
 
-        List<Short> orderStatus = OrderUtil.orderStatus(showType);
+        List<Integer> orderStatus = OrderUtil.orderStatus(showType);
 
 
         IPage<Order> orderPage = orderService.queryByOrderStatus(userId, orderStatus, page, limit, sort, order);

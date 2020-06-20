@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public interface IOrderService extends IService<Order> {
 
-    IPage<Order> queryByOrderStatus(Integer userId, List<Short> orderStatus, Integer current, Integer limit, String sort, String order);
+    IPage<Order> queryByOrderStatus(Integer userId, List<Integer> orderStatus, Integer current, Integer limit, String sort, String order);
 
     boolean updateWithOptimisticLocker(Order order);
 

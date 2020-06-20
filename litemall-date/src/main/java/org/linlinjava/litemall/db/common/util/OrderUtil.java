@@ -118,26 +118,26 @@ public class OrderUtil {
         return handleOption;
     }
 
-    public static List<Short> orderStatus(Integer showType) {
+    public static List<Integer> orderStatus(Integer showType) {
         // 全部订单
         if (showType == 0) {
             return null;
         }
 
-        List<Short> status = new ArrayList<Short>(2);
+        List<Integer> status = new ArrayList<Integer>(2);
 
         if (showType.equals(1)) {
             // 待付款订单
-            status.add((short) 101);
+            status.add(101);
         } else if (showType.equals(2)) {
             // 待发货订单
-            status.add((short) 201);
+            status.add(201);
         } else if (showType.equals(3)) {
             // 待收货订单
-            status.add((short) 301);
+            status.add(301);
         } else if (showType.equals(4)) {
             // 待评价订单
-            status.add((short) 401);
+            status.add(401);
 //            系统超时自动取消，此时应该不支持评价
 //            status.add((short)402);
         } else {
@@ -149,45 +149,45 @@ public class OrderUtil {
 
 
     public static boolean isCreateStatus(Order order) {
-        return OrderUtil.STATUS_CREATE == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_CREATE.equals(order.getOrderStatus());
     }
 
     public static boolean hasPayed(Order order) {
-        return OrderUtil.STATUS_CREATE != order.getOrderStatus().shortValue()
-                && OrderUtil.STATUS_CANCEL != order.getOrderStatus().shortValue()
-                && OrderUtil.STATUS_AUTO_CANCEL != order.getOrderStatus().shortValue();
+        return !OrderUtil.STATUS_CREATE.equals(order.getOrderStatus())
+                && !OrderUtil.STATUS_CANCEL.equals(order.getOrderStatus())
+                && !OrderUtil.STATUS_AUTO_CANCEL.equals(order.getOrderStatus());
     }
 
     public static boolean isPayStatus(Order order) {
-        return OrderUtil.STATUS_PAY == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_PAY.equals(order.getOrderStatus());
     }
 
     public static boolean isShipStatus(Order order) {
-        return OrderUtil.STATUS_SHIP == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_SHIP.equals(order.getOrderStatus());
     }
 
     public static boolean isConfirmStatus(Order order) {
-        return OrderUtil.STATUS_CONFIRM == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_CONFIRM.equals(order.getOrderStatus());
     }
 
     public static boolean isCancelStatus(Order order) {
-        return OrderUtil.STATUS_CANCEL == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_CANCEL.equals(order.getOrderStatus());
     }
 
     public static boolean isAutoCancelStatus(Order order) {
-        return OrderUtil.STATUS_AUTO_CANCEL == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_AUTO_CANCEL.equals(order.getOrderStatus());
     }
 
     public static boolean isRefundStatus(Order order) {
-        return OrderUtil.STATUS_REFUND == order.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_REFUND.equals(order.getOrderStatus());
     }
 
     public static boolean isRefundConfirmStatus(Order litemallOrder) {
-        return OrderUtil.STATUS_REFUND_CONFIRM == litemallOrder.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_REFUND_CONFIRM.equals(litemallOrder.getOrderStatus());
     }
 
     public static boolean isAutoConfirmStatus(Order litemallOrder) {
-        return OrderUtil.STATUS_AUTO_CONFIRM == litemallOrder.getOrderStatus().shortValue();
+        return OrderUtil.STATUS_AUTO_CONFIRM.equals(litemallOrder.getOrderStatus());
     }
 
 

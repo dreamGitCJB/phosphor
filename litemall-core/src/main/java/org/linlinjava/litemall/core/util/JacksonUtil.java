@@ -91,7 +91,7 @@ public class JacksonUtil {
         return null;
     }
 
-    public static Short parseShort(String body, String field) {
+    public static Integer parseShort(String body, String field) {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node;
         try {
@@ -99,7 +99,7 @@ public class JacksonUtil {
             JsonNode leaf = node.get(field);
             if (leaf != null) {
                 Integer value = leaf.asInt();
-                return value.shortValue();
+                return value;
             }
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
