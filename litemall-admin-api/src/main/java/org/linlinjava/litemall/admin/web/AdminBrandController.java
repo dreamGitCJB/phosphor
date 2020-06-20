@@ -42,7 +42,7 @@ public class AdminBrandController {
         PageUtil.pagetoPage(pageData, sort, order);
 
         IPage<Brand> brandList = brandService.page(pageData, new LambdaQueryWrapper<Brand>()
-                .eq(!StringUtils.isEmpty(id), Brand::getId, Integer.valueOf(id))
+                .eq(!StringUtils.isEmpty(id), Brand::getId, id == null ? 0 : Integer.valueOf(id))
                 .like(!StringUtils.isEmpty(name), Brand::getName, name));
 
         return ResponseUtil.okPageList(brandList);
